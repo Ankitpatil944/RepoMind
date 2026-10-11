@@ -10,3 +10,5 @@ dist/
 build/
 .pytest_cache/
 "@ | Set-Content .gitignore
+# local repos mounted into the container for ingestion
+repos/
