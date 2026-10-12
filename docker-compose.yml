@@ -20,8 +20,19 @@ services:
     environment:
       DATABASE_URL: postgresql://repomind:repomind@db:5432/repomind
       REPOS_ROOT: /repos
+      # Embeddings + reranker run locally (fastembed/ONNX); models download on first use.
+      FASTEMBED_CACHE_PATH: /models
+      EMBEDDER: ${EMBEDDER:-fastembed}
+      RERANKER: ${RERANKER:-fastembed}
+      # Any OpenAI-compatible chat endpoint. Defaults to Ollama on the host.
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5-coder:7b}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./repos:/repos:ro
+      - models:/models
     ports:
       - "8000:8000"
     depends_on:
@@ -30,3 +41,4 @@ services:
 
 volumes:
   pgdata:
+  models:

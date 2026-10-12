@@ -33,7 +33,17 @@ CREATE TABLE IF NOT EXISTS chunks (
     content         TEXT NOT NULL
 );
 
+-- Milestone 3: retrieval columns. NULL embedding / empty search_text means
+-- "not indexed yet"; ingest backfills them.
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS search_text TEXT NOT NULL DEFAULT '';
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS embedding vector(384);
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS search_tsv tsvector
+    GENERATED ALWAYS AS (to_tsvector('simple', search_text)) STORED;
+
 CREATE INDEX IF NOT EXISTS chunks_repo_idx ON chunks (repo_id);
+CREATE INDEX IF NOT EXISTS chunks_tsv_idx ON chunks USING gin (search_tsv);
+CREATE INDEX IF NOT EXISTS chunks_embedding_idx
+    ON chunks USING hnsw (embedding vector_cosine_ops);
 """
 
 
