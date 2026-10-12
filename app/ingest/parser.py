@@ -136,6 +136,10 @@ def _module_chunk(source: bytes, covered: list[tuple[int, int]]) -> Chunk | None
     return Chunk("module", "<module>", "<module>", keep[0] + 1, keep[-1] + 1, content)
 
 
+def parse_tree(source: bytes, language: str) -> Node:
+    return _PARSERS[language].parse(source).root_node
+
+
 def parse_source(source: bytes, language: str) -> list[Chunk]:
     tree = _PARSERS[language].parse(source)
     chunks: list[Chunk] = []

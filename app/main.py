@@ -6,8 +6,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from app import db, llm
-from app.ask import build_messages, citation
+from app.ask import build_messages, citation, is_endpoint_question
 from app.embed import get_embedder
+from app.graph import function_graph, list_endpoints
 from app.ingest.service import ingest_repo
 from app.rerank import get_reranker
 from app.retrieval import hybrid_search
@@ -86,11 +87,44 @@ def ask(req: AskRequest) -> dict:
     sources = [citation(i, h) for i, h in enumerate(hits, start=1)]
     if not hits:
         return {"answer": "No indexed code matched this question.", "sources": [], "error": None}
+
+    endpoints = None
+    if is_endpoint_question(req.question):
+        with db.connect() as conn:
+            endpoints = list_endpoints(conn, req.repo_id) or None
+
     try:
-        answer = llm.chat(build_messages(req.question, hits))
+        answer = llm.chat(build_messages(req.question, hits, endpoints))
     except llm.LLMError as e:
-        return {"answer": None, "sources": sources, "error": str(e)}
-    return {"answer": answer, "sources": sources, "error": None}
+        return {"answer": None, "sources": sources, "endpoints": endpoints or [], "error": str(e)}
+    return {"answer": answer, "sources": sources, "endpoints": endpoints or [], "error": None}
+
+
+@app.get("/repos/{repo_id}/endpoints")
+def repo_endpoints(repo_id: int, auth: str | None = None) -> list[dict]:
+    """HTTP endpoints found by static analysis, with auth classification.
+
+    auth=authentication  -> endpoints that perform login/token/etc.
+    auth=protected       -> endpoints guarded by auth middleware/decorators
+    auth=public          -> endpoints with no auth signal"""
+    if auth not in (None, "authentication", "protected", "public"):
+        raise HTTPException(400, "auth must be authentication, protected or public")
+    with db.connect() as conn:
+        found = list_endpoints(conn, repo_id)
+    if auth == "authentication":
+        return [e for e in found if e["handles_authentication"]]
+    if auth == "protected":
+        return [e for e in found if e["requires_auth"]]
+    if auth == "public":
+        return [e for e in found if not e["handles_authentication"] and not e["requires_auth"]]
+    return found
+
+
+@app.get("/repos/{repo_id}/graph")
+def graph(repo_id: int, name: str) -> dict:
+    """Where a function is defined, what it calls, and who calls it (by name)."""
+    with db.connect() as conn:
+        return function_graph(conn, repo_id, name)
 
 
 @app.get("/repos")
