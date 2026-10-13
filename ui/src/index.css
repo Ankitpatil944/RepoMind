@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+@import './design/tokens.css';
+@import '@xyflow/react/dist/style.css';
+
+@theme inline {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg-0: var(--bg-0);
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-auth: var(--auth);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-control: var(--border-control);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent-500) 40%, transparent);
+}
+
+/* Visible keyboard focus on everything interactive. */
+:focus-visible {
+  outline: 2px solid var(--accent-400);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+button,
+[role='tab'],
+[role='treeitem'],
+select,
+summary {
+  cursor: pointer;
+}
+
+/* Slim dark scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-control) transparent;
+}
+
+/* ---- React Flow, themed with tokens ------------------------------------ */
+.react-flow {
+  --xy-background-color: var(--bg-0);
+  --xy-edge-stroke: var(--border-control);
+  --xy-edge-stroke-selected: var(--accent-500);
+  --xy-attribution-background-color: transparent;
+  --xy-minimap-background-color: var(--bg-1);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--bg-0) 70%, transparent);
+  --xy-controls-button-background-color: var(--bg-2);
+  --xy-controls-button-background-color-hover: var(--bg-3);
+  --xy-controls-button-color: var(--text-1);
+  --xy-controls-button-border-color: var(--border-subtle);
+  --xy-handle-background-color: var(--border-control);
+  --xy-handle-border-color: var(--bg-0);
+}
+
+.react-flow__node {
+  transition: opacity var(--dur-fast) linear;
+}
+
+.react-flow__edge-path {
+  stroke-width: 1.5;
+}
+
+/* Only the edges on the selected path flow; everything else stays still. */
+.react-flow__edge.edge-active .react-flow__edge-path {
+  stroke: var(--accent-500);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  animation: edge-flow 900ms linear infinite;
+}
+
+.react-flow__edge.edge-dim .react-flow__edge-path {
+  opacity: 0.35;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+.node-enter {
+  animation: fade-in 200ms var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .react-flow__edge.edge-active .react-flow__edge-path {
+    stroke-dasharray: none;
+  }
+}
+
+/* ---- AI answer prose ---------------------------------------------------- */
+.prose-answer p {
+  margin: 0 0 0.75em;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.prose-answer ul,
+.prose-answer ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.25em;
+}
+.prose-answer li {
+  margin: 0.25em 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.prose-answer code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-3);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.prose-answer pre {
+  background: var(--bg-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 0.75em;
+  overflow-x: auto;
+}
+.prose-answer pre code {
+  background: none;
+  padding: 0;
+}

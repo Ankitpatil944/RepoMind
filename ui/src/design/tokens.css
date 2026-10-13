@@ -1,0 +1,47 @@
+/* Design tokens: the single source of truth for colour. Components use the
+   Tailwind aliases (bg-bg-1, text-text-2, ...) or var(--token); never raw hex.
+   tokens.test.ts asserts the contrast of every pair that matters. */
+:root {
+  color-scheme: dark;
+
+  /* surfaces */
+  --bg-0: #0b0b10; /* app */
+  --bg-1: #111118; /* panels */
+  --bg-2: #181822; /* cards, nodes */
+  --bg-3: #20202d; /* hover */
+
+  /* text */
+  --text-1: #ececf3;
+  --text-2: #a1a1b5;
+  --text-3: #8383a0;
+
+  /* accent: selection, active path, focus, primary action only */
+  --accent-400: #a78bfa; /* text, links, focus ring */
+  --accent-500: #8b5cf6; /* borders, edges, fills (not text) */
+  --accent-600: #7c3aed; /* primary button, white text */
+
+  /* semantic */
+  --auth: #60a5fa; /* endpoint that performs authentication */
+  --ok: #34d399; /* protected */
+  --warn: #fbbf24; /* unresolved / caution */
+  --danger: #f87171; /* error */
+
+  /* lines */
+  --border-subtle: #2a2a3a; /* decorative dividers only */
+  --border-control: #646482; /* inputs, buttons, node outlines (>= 3:1) */
+
+  /* syntax */
+  --syn-keyword: #c4b5fd;
+  --syn-string: #86efac;
+  --syn-number: #fcd34d;
+  --syn-comment: #8383a0;
+  --syn-function: #93c5fd;
+  --syn-type: #f9a8d4;
+
+  /* shape + motion */
+  --radius-card: 8px;
+  --radius-control: 6px;
+  --dur-fast: 150ms;
+  --dur-panel: 220ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
