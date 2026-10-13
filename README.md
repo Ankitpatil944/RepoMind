@@ -37,7 +37,8 @@ $ python -m app.cli search shop_api "where are passwords hashed"
   splitting), fused with rank fusion and re-ranked by a cross-encoder.
 - **Finds your API.** Detects HTTP routes (FastAPI, Flask, Express), their handlers, and
   whether each one *performs* or *requires* authentication, with the evidence.
-- **Call graph.** "Who calls this?" and "what does this call?" by function name.
+- **Call graph you can explore.** "Who calls this?" and "what does this call?" as an
+  interactive graph, from any endpoint or function, with auth evidence highlighted.
 - **Measured, not vibes.** A built-in evaluation harness scores retrieval and endpoint
   detection and can fail CI on regressions.
 
@@ -62,6 +63,25 @@ docker compose exec api python -m app.cli search shop_api "where are passwords h
 
 Everything above works **without any API key or LLM**. Interactive API docs live at
 <http://localhost:8000/docs>.
+
+### Open the web UI
+
+Go to **<http://localhost:8000>**. Click **Index project → Index sample project**, or run the
+`ingest` command above, then explore:
+
+- **Graph** (centre): pick an endpoint and see what it calls, where authentication happens,
+  and which calls leave the repo (dashed nodes). Click a node to select it, double-click to
+  re-centre the graph on it, and use *Calls / Callers / Both* and the depth control to widen
+  or narrow the view. The list icon switches to a text outline of the same graph.
+- **Explorer** (left): endpoints with their auth role, a file tree, and symbol search.
+- **Inspector** (right): **Source** with the selected code highlighted, **Explain** for a
+  written explanation of the selected function or an answer to your question (with clickable
+  `[n]` citations), and **Evidence** for *why* something was classified as auth or protected.
+- **Ctrl/⌘ K** opens a command palette; **/** focuses the ask box. Every view has a shareable
+  URL (the state lives in the address bar).
+
+The graph, explorer, source and evidence work with no LLM. Written explanations need one
+(see below).
 
 ### Index your own project
 
@@ -203,10 +223,25 @@ ruff check .
 python -m evals.run --embedder hashing                  # the CI regression gate
 ```
 
+Web UI (Vite + React + TypeScript + React Flow), in `ui/`:
+
+```bash
+cd ui
+npm install
+npm run dev        # http://localhost:5173, proxies API calls to 127.0.0.1:8000
+npm test           # unit + component tests (no browser needed)
+npm run typecheck && npm run build
+```
+
+`docker compose up --build` builds the UI in a Node stage and serves it from the API at `/`,
+so users never need Node. Design tokens live in `ui/src/design/tokens.css`; a test enforces
+WCAG contrast for every text/background pair.
+
 Tests never download models: they use a deterministic fake embedder. Project layout:
 
 ```text
 app/        API, ingestion (parser, analysis), retrieval, graph, CLI
+ui/         web UI (React Flow graph, explorer, source, explain)
 evals/      benchmark app, golden dataset, metrics, runner, thresholds
 tests/      unit and integration tests
 ```
@@ -220,14 +255,20 @@ tests/      unit and integration tests
 | `Cannot reach RepoMind` | Run `docker compose up -d` and check `docker compose ps`. |
 | Port 8000 or 5433 already in use | Change the left side of the port mapping in `docker-compose.yml`. |
 | First request is slow after a build with no network | Models download on first use (~200 MB), then are cached in a volume. |
+| UI shows "Source unavailable" | The preview reads files from the mounted project folder. Check it is still under `repos/` (or `REPOS_DIR`), and re-run ingest if the path moved. |
+| UI shows "changed since indexed" | The file was edited after indexing, so highlighted lines may be off. Re-run ingest. |
+| Graph looks sparse or has odd links | Call edges are matched by function name, so some are missing or ambiguous. Dashed nodes are calls resolved outside the repo. |
+| Upgraded and endpoints look stale | Re-run ingest (or **Index project** in the UI); analysis results are refreshed automatically after an upgrade. |
 
 ## Roadmap
 
 Done: ingestion, hybrid retrieval + reranking, cited answers, endpoint/auth detection,
-call graph, incremental re-indexing, evaluation harness with CI gate, CLI.
+call graph, incremental re-indexing, evaluation harness with CI gate, CLI, web UI with an
+interactive call graph.
 
-Planned: web UI, TypeScript and more frameworks, cross-file router prefixes, indexing
-Git URLs directly, larger benchmark, background indexing jobs, LLM-judged faithfulness.
+Planned: module-level (import) graph view, TypeScript and more frameworks, cross-file router
+prefixes, indexing Git URLs directly, larger benchmark, background indexing jobs,
+LLM-judged faithfulness, streaming answers.
 
 ## Contributing
 

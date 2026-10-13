@@ -12,3 +12,5 @@ __pycache__
 repos
 tests
 eval-report.json
+ui/node_modules
+ui/dist

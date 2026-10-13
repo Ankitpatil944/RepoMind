@@ -87,7 +87,12 @@ def _py_target(call: Node) -> str | None:
     fn = call.child_by_field_name("function")
     if fn is None or fn.type not in ("identifier", "attribute"):
         return None
-    return _txt(fn)[:120]
+    text = _txt(fn)
+    # `conn.execute(sql).fetchall` is a call on a call's result: the text embeds
+    # the inner call, so it is not a stable name. The inner call is recorded on its own.
+    if "(" in text or "\n" in text or len(text) > 120:
+        return None
+    return text
 
 
 def _py_args(call: Node) -> tuple[list[Node], dict[str, Node]]:

@@ -98,6 +98,26 @@ def connect() -> psycopg.Connection:
     return psycopg.connect(url)
 
 
+# Bump when the static analyzer's output changes, so indexes built by an older
+# analyzer are re-analyzed (without re-parsing) on the next ingest.
+ANALYSIS_VERSION = "2"
+
+
 def init_schema(conn: psycopg.Connection) -> None:
     conn.execute(SCHEMA)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+    )
+    row = conn.execute(
+        "SELECT value FROM schema_meta WHERE key = 'analysis_version'"
+    ).fetchone()
+    if row is None or row[0] != ANALYSIS_VERSION:
+        conn.execute("UPDATE files SET analyzed = FALSE")
+        conn.execute(
+            """
+            INSERT INTO schema_meta (key, value) VALUES ('analysis_version', %s)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+            """,
+            (ANALYSIS_VERSION,),
+        )
     conn.commit()

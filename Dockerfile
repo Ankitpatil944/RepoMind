@@ -1,3 +1,12 @@
+# --- Stage 1: build the web UI -------------------------------------------------
+FROM node:22-slim AS ui
+WORKDIR /ui
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY ui/ ./
+RUN npm run build
+
+# --- Stage 2: API (+ the built UI, served by FastAPI at /) ---------------------
 FROM python:3.12-slim
 
 WORKDIR /srv
@@ -12,5 +21,6 @@ RUN python -c "from fastembed import TextEmbedding; from fastembed.rerank.cross_
 
 COPY app ./app
 COPY evals ./evals
+COPY --from=ui /ui/dist ./ui/dist
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

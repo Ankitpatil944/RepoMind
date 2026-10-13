@@ -69,6 +69,20 @@ def test_javascript_imports_include_require():
     assert all(c.callee_name != "require" for c in result.calls)
 
 
+def test_python_calls_on_call_results_are_not_recorded_as_names():
+    source = (
+        b"def f(conn, raw):\n"
+        b"    rows = conn.execute(sql, params).fetchall()\n"
+        b"    return hashlib.pbkdf2_hmac('sha256', raw.encode(), salt, 1).hex()\n"
+    )
+
+    callees = {c.callee_full for c in analyze_source(source, "python").calls}
+
+    assert {"conn.execute", "hashlib.pbkdf2_hmac", "raw.encode"} <= callees
+    assert not any("(" in c for c in callees)
+    assert "conn.execute(sql, params).fetchall" not in callees
+
+
 def test_classify_authentication_endpoint_is_not_marked_protected():
     c = classify("/auth/login", "login", [], ["verify_password", "jwt.encode"])
 
