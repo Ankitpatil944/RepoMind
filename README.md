@@ -9,23 +9,25 @@ real source locations, and the whole thing runs locally and free.
 [![CI](https://github.com/Ankitpatil944/RepoMind/actions/workflows/ci.yml/badge.svg)](https://github.com/Ankitpatil944/RepoMind/actions)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![PostgreSQL + pgvector](https://img.shields.io/badge/postgres-pgvector-4169E1)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+Real output from the bundled sample project:
 
 ```text
-$ repomind endpoints shop_api
-POST    /auth/login            app/routes/auth.py:16      login            AUTH
-POST    /auth/refresh          app/routes/auth.py:35      refresh          AUTH protected
-GET     /orders                app/routes/orders.py:14    list_orders      protected
-GET     /products              app/routes/products.py:11  list_products
-POST    /admin/users/{user_id}/ban  app/routes/admin.py:17  ban_user       protected
+$ python -m app.cli endpoints shop_api
+POST    /auth/login                   app/routes/auth.py:15      login           AUTH
+POST    /auth/refresh                 app/routes/auth.py:35      refresh         AUTH protected
+GET     /orders                       app/routes/orders.py:14    list_orders     protected
+GET     /products                     app/routes/products.py:10  list_products
+POST    /admin/users/{user_id}/ban    app/routes/admin.py:14     ban_user        protected
 
-$ repomind ask shop_api "Which function charges a customer's card?"
-`charge_card` in app/services/payments.py signs the payload and posts it to the
-payment provider [1]; it is called from the pay_order route [2].
-
-Sources:
-  [1] app/services/payments.py:19-30  charge_card
-  [2] app/routes/orders.py:30-37      pay_order
+$ python -m app.cli search shop_api "where are passwords hashed"
+[1] app/security.py:15-17  hash_password (function)
+[2] app/security.py:1-53  <module> (module)
+[3] app/routes/auth.py:24-32  register (function)
 ```
+
+`ask` returns the same kind of cited sources plus a written answer once an LLM is configured.
 
 ## What makes it different from "chat with your repo"
 
@@ -234,4 +236,4 @@ Issues and PRs are welcome. Please keep changes focused, add tests, run `pytest`
 
 ## License
 
-TBD (add a `LICENSE` file before publishing).
+[MIT](LICENSE)
