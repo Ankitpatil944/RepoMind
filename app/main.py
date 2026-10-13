@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app import db, llm
+from app.api_ui import router as ui_router
 from app.ask import build_messages, citation, is_endpoint_question
 from app.embed import get_embedder
 from app.graph import function_graph, list_endpoints
@@ -23,6 +25,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="RepoMind", lifespan=lifespan)
+app.include_router(ui_router)
 
 
 class IngestRequest(BaseModel):
@@ -169,3 +172,10 @@ def list_chunks(repo_id: int, kind: str | None = None, limit: int = 50) -> list[
         }
         for p, k, q, s, e, content in rows
     ]
+
+
+# Web UI (built into the Docker image, or by `npm run build` in ui/). Mounted
+# last so every API route above takes precedence.
+_UI_DIST = Path(os.environ.get("UI_DIST", Path(__file__).resolve().parent.parent / "ui" / "dist"))
+if (_UI_DIST / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=_UI_DIST, html=True), name="ui")

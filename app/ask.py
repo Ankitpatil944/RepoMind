@@ -61,9 +61,41 @@ def build_messages(
     ]
 
 
+EXPLAIN_SYSTEM_PROMPT = (
+    "You are RepoMind, an assistant that explains code. Explain the TARGET snippet "
+    "([1]) for a developer new to this codebase: what it does, how it fits with the "
+    "functions it calls and the places that call it, and any authentication or "
+    "authorization behaviour. Use ONLY the snippets and facts provided; cite snippets "
+    "inline like [1] or [2]. If something is not shown, say so instead of guessing. "
+    "Keep it to a short paragraph followed by at most 4 bullet points."
+)
+
+
+def build_explain_messages(
+    target: Hit, callees: list[Hit], callers: list[str], endpoints: list[dict]
+) -> list[dict[str, str]]:
+    parts = ["TARGET and the functions it calls:\n\n" + "\n\n".join(
+        format_snippet(i, h) for i, h in enumerate([target, *callees], start=1)
+    )]
+    parts.append(
+        "Called by: " + (", ".join(callers) if callers else "no resolved callers found")
+    )
+    if endpoints:
+        parts.append(
+            "HTTP endpoints handled by the target (static analysis):\n"
+            + "\n".join(format_endpoint(e) for e in endpoints)
+        )
+    parts.append("Explain the TARGET snippet.")
+    return [
+        {"role": "system", "content": EXPLAIN_SYSTEM_PROMPT},
+        {"role": "user", "content": "\n\n".join(parts)},
+    ]
+
+
 def citation(number: int, hit: Hit) -> dict:
     return {
         "ref": number,
+        "chunk_id": hit.chunk_id,
         "file": hit.file,
         "start_line": hit.start_line,
         "end_line": hit.end_line,

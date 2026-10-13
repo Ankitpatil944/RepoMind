@@ -196,8 +196,8 @@ Floors live in `evals/thresholds.json`; CI fails if a metric drops below them.
 ```bash
 python -m venv .venv && source .venv/bin/activate      # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-docker compose up -d db                                 # Postgres on localhost:5433
-export DATABASE_URL=postgresql://repomind:repomind@localhost:5433/repomind   # PowerShell: $env:DATABASE_URL="..."
+docker compose up -d db                                 # Postgres on 127.0.0.1:5433
+export DATABASE_URL=postgresql://repomind:repomind@127.0.0.1:5433/repomind   # PowerShell: $env:DATABASE_URL="..."
 pytest -q          # DB tests are skipped when DATABASE_URL is unset
 ruff check .
 python -m evals.run --embedder hashing                  # the CI regression gate
