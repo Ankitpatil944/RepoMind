@@ -43,9 +43,10 @@ class AskRequest(BaseModel):
 
 def _resolve_repo_path(raw: str) -> Path:
     path = Path(raw).resolve()
-    allowed_root = os.environ.get("REPOS_ROOT")
-    if allowed_root and not path.is_relative_to(Path(allowed_root).resolve()):
-        raise HTTPException(400, f"path must be inside {allowed_root}")
+    # REPOS_ROOT may hold several allowed roots separated by os.pathsep.
+    allowed = [r for r in os.environ.get("REPOS_ROOT", "").split(os.pathsep) if r]
+    if allowed and not any(path.is_relative_to(Path(r).resolve()) for r in allowed):
+        raise HTTPException(400, f"path must be inside one of: {', '.join(allowed)}")
     if not path.is_dir():
         raise HTTPException(404, f"directory not found: {raw}")
     return path

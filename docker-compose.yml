@@ -6,7 +6,8 @@ services:
       POSTGRES_PASSWORD: repomind
       POSTGRES_DB: repomind
     ports:
-      - "5433:5432"
+      # localhost only; 5433 avoids clashing with a Postgres already on 5432.
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,8 +20,8 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql://repomind:repomind@db:5432/repomind
-      REPOS_ROOT: /repos
-      # Embeddings + reranker run locally (fastembed/ONNX); models download on first use.
+      # Folders the API may index (':'-separated, as seen inside the container).
+      REPOS_ROOT: /repos:/samples
       FASTEMBED_CACHE_PATH: /models
       EMBEDDER: ${EMBEDDER:-fastembed}
       RERANKER: ${RERANKER:-fastembed}
@@ -31,10 +32,14 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./repos:/repos:ro
+      # Your code goes here (set REPOS_DIR in .env to use another folder).
+      - ${REPOS_DIR:-./repos}:/repos:ro
+      # Bundled sample project for a zero-setup demo.
+      - ./evals/repos:/samples:ro
       - models:/models
     ports:
-      - "8000:8000"
+      # localhost only: the API has no authentication.
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
