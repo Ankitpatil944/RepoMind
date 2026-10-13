@@ -1,1 +1,1 @@
-extend-exclude = ["tests/fixtures"]
+extend-exclude = ["tests/fixtures", "evals/repos"]

@@ -167,6 +167,23 @@ def _analyze_python(root: Node) -> Analysis:
                 result.calls.append(Call(target.rsplit(".", 1)[-1], target, n.start_point.row + 1))
     result.imports = _dedupe(result.imports)
 
+    # router = APIRouter(prefix="/orders") / Blueprint(..., url_prefix="/x") in this file
+    prefixes: dict[str, str] = {}
+    router_signals: dict[str, list[str]] = {}  # APIRouter(dependencies=[Depends(...)])
+    for n in _walk(root):
+        if n.type != "assignment":
+            continue
+        left, right = n.child_by_field_name("left"), n.child_by_field_name("right")
+        if left is None or left.type != "identifier" or right is None or right.type != "call":
+            continue
+        target = _py_target(right)
+        if target and target.rsplit(".", 1)[-1] in ("APIRouter", "Blueprint"):
+            _, keywords = _py_args(right)
+            prefix = _py_string(keywords.get("prefix")) or _py_string(keywords.get("url_prefix"))
+            if prefix:
+                prefixes[_txt(left)] = prefix
+            router_signals[_txt(left)] = _py_depends(right)
+
     for n in _walk(root):
         if n.type != "decorated_definition":
             continue
@@ -175,7 +192,7 @@ def _analyze_python(root: Node) -> Analysis:
         if definition is None or definition.type != "function_definition" or name is None:
             continue
 
-        routes: list[tuple[str, str, str]] = []  # method, path, attr
+        routes: list[tuple[str, str, str, str]] = []  # method, full path, attr, router var
         signals: list[str] = []
         for dec in (c for c in n.children if c.type == "decorator"):
             expr = next((c for c in dec.named_children if c.type != "comment"), None)
@@ -188,8 +205,12 @@ def _analyze_python(root: Node) -> Analysis:
             signals.extend(_py_depends(dec))
             found = _py_route(expr, target) if expr.type == "call" and target else None
             if found:
-                attr = target.rsplit(".", 1)[-1]
-                routes.extend((m, p, attr) for m, p in found)
+                obj, _, attr = target.rpartition(".")
+                prefix = prefixes.get(obj, "")
+                routes.extend(
+                    (m, prefix if (prefix and p == "/") else prefix + p, attr, obj)
+                    for m, p in found
+                )
             elif target:
                 signals.append(target)
 
@@ -197,7 +218,7 @@ def _analyze_python(root: Node) -> Analysis:
         if params is not None:
             signals.extend(_py_depends(params))
 
-        for method, path, attr in routes:
+        for method, path, attr, obj in routes:
             result.endpoints.append(
                 RawEndpoint(
                     method=method,
@@ -206,7 +227,7 @@ def _analyze_python(root: Node) -> Analysis:
                     line=n.start_point.row + 1,
                     handler_name=_txt(name),
                     handler_line=n.start_point.row + 1,
-                    signals=tuple(_dedupe(signals)),
+                    signals=tuple(_dedupe(signals + router_signals.get(obj, []))),
                     inline_calls=(),
                 )
             )

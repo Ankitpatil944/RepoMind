@@ -1,0 +1,115 @@
+{
+  "name": "shop_api",
+  "repo": "../repos/shop_api",
+  "questions": [
+    {
+      "id": "login-flow",
+      "question": "How do users log in and get a token?",
+      "relevant": ["app/routes/auth.py::login", "app/security.py::create_access_token"],
+      "must_mention": ["/auth/login"]
+    },
+    {
+      "id": "password-hashing",
+      "question": "Where are passwords hashed?",
+      "relevant": ["app/security.py::hash_password"]
+    },
+    {
+      "id": "jwt-validation",
+      "question": "How is a JWT validated on incoming requests?",
+      "relevant": ["app/security.py::decode_access_token", "app/security.py::get_current_user"]
+    },
+    {
+      "id": "charge-card",
+      "question": "Which function charges a customer's credit card?",
+      "relevant": ["app/services/payments.py::charge_card"],
+      "must_mention": ["charge_card"]
+    },
+    {
+      "id": "order-total",
+      "question": "How is the order total computed with discount codes?",
+      "relevant": ["app/services/orders.py::compute_total", "app/services/orders.py::apply_discount"]
+    },
+    {
+      "id": "order-confirmation-email",
+      "question": "Where is the order confirmation email sent?",
+      "relevant": ["app/services/emailer.py::send_order_confirmation"]
+    },
+    {
+      "id": "pagination",
+      "question": "How does pagination work for list endpoints?",
+      "relevant": ["app/utils/pagination.py::paginate", "app/utils/pagination.py::parse_page_params"]
+    },
+    {
+      "id": "webhook-signature",
+      "question": "How is the payment webhook signature verified?",
+      "relevant": ["webhooks/server.js::verifyStripeSignature"],
+      "must_mention": ["verifyStripeSignature"]
+    },
+    {
+      "id": "admin-protection",
+      "question": "How are admin-only routes protected?",
+      "relevant": ["app/security.py::require_admin"],
+      "must_mention": ["require_admin"]
+    },
+    {
+      "id": "cancel-order",
+      "question": "How do I cancel an order?",
+      "relevant": ["app/services/orders.py::cancel_order", "app/routes/orders.py::cancel_order_endpoint"]
+    },
+    {
+      "id": "refund",
+      "question": "What does refunding a payment do?",
+      "relevant": ["app/services/payments.py::refund_payment"]
+    },
+    {
+      "id": "db-connection",
+      "question": "How is the database connection created?",
+      "relevant": ["app/db.py::get_connection"]
+    },
+    {
+      "id": "password-reset-email",
+      "question": "Where is the password reset email sent?",
+      "relevant": ["app/services/emailer.py::send_password_reset"]
+    },
+    {
+      "id": "list-products",
+      "question": "How do I list products in the catalogue?",
+      "relevant": ["app/routes/products.py::list_products"]
+    },
+    {
+      "id": "register",
+      "question": "How do new users register an account?",
+      "relevant": ["app/routes/auth.py::register"]
+    },
+    {
+      "id": "webhook-handler",
+      "question": "Where is the Stripe webhook event handled?",
+      "relevant": ["webhooks/server.js::handleStripeEvent"]
+    }
+  ],
+  "endpoints": [
+    {"method": "POST", "path": "/auth/login", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/auth/register", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/auth/refresh", "handles_authentication": true, "requires_auth": true},
+    {"method": "POST", "path": "/auth/forgot-password", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/auth/logout", "handles_authentication": true, "requires_auth": true},
+    {"method": "GET", "path": "/orders", "handles_authentication": false, "requires_auth": true},
+    {"method": "POST", "path": "/orders", "handles_authentication": false, "requires_auth": true},
+    {"method": "POST", "path": "/orders/{order_id}/pay", "handles_authentication": false, "requires_auth": true},
+    {"method": "DELETE", "path": "/orders/{order_id}", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/products", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/products/{product_id}", "handles_authentication": false, "requires_auth": false},
+    {"method": "POST", "path": "/products", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/admin/users", "handles_authentication": false, "requires_auth": true},
+    {"method": "POST", "path": "/admin/users/{user_id}/ban", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/health", "handles_authentication": false, "requires_auth": false},
+    {
+      "method": "POST",
+      "path": "/webhooks/stripe",
+      "handles_authentication": false,
+      "requires_auth": true,
+      "note": "caller is authenticated by HMAC signature middleware, not a user token"
+    },
+    {"method": "GET", "path": "/webhooks/health", "handles_authentication": false, "requires_auth": false}
+  ]
+}
