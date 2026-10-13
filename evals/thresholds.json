@@ -1,0 +1,30 @@
+{
+  "hashing+none": {
+    "min": {
+      "endpoints.auth_f1": 0.95,
+      "endpoints.classification_accuracy": 0.89,
+      "endpoints.detection_precision": 0.95,
+      "endpoints.detection_recall": 0.95,
+      "endpoints.requires_auth_f1": 0.9,
+      "retrieval.hit@1": 0.64,
+      "retrieval.hit@3": 0.82,
+      "retrieval.mrr": 0.74,
+      "retrieval.recall@10": 0.82,
+      "retrieval.recall@5": 0.73
+    }
+  },
+  "fastembed+fastembed": {
+    "min": {
+      "endpoints.auth_f1": 0.95,
+      "endpoints.classification_accuracy": 0.89,
+      "endpoints.detection_precision": 0.95,
+      "endpoints.detection_recall": 0.95,
+      "endpoints.requires_auth_f1": 0.9,
+      "retrieval.hit@1": 0.95,
+      "retrieval.hit@3": 0.95,
+      "retrieval.mrr": 0.95,
+      "retrieval.recall@10": 0.95,
+      "retrieval.recall@5": 0.95
+    }
+  }
+}
