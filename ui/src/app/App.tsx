@@ -1,5 +1,16 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import { ExternalLink, Globe, KeyRound, LayoutDashboard, ListTree, Network, Boxes, ShieldCheck } from 'lucide-react'
+import {
+  Boxes,
+  ExternalLink,
+  Globe,
+  KeyRound,
+  LayoutDashboard,
+  ListTree,
+  Network,
+  PanelLeft,
+  PanelRight,
+  ShieldCheck,
+} from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAsk, useCapabilities, useEndpoints, useExplain, useFlow, useRepos } from '../api/hooks'
@@ -63,10 +74,18 @@ export default function App() {
   const [indexOpen, setIndexOpen] = useState(false)
   const [archSel, setArchSel] = useState<ModuleNode | null>(null)
   const askInput = useRef<HTMLInputElement>(null)
-  const explorerPanel = usePanelWidth('rm.explorer', 288, 220, 460, 'right')
-  const inspectorPanel = usePanelWidth('rm.inspector', 460, 320, 720, 'left')
+  const [explorerOpen, setExplorerOpen] = useState(true)
+  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const explorerPanel = usePanelWidth('rm.explorer.v2', 264, 200, 460, 'right')
+  const inspectorPanel = usePanelWidth('rm.inspector.v2', 420, 320, 720, 'left')
   const capabilities = useCapabilities()
   const aiStatus = capabilities.data?.llm.status ?? null
+
+  // The explorer lists endpoints/files, which the dependency map doesn't use:
+  // hand that width to the canvas, and give it back on the other views.
+  useEffect(() => {
+    setExplorerOpen(s.view !== 'architecture')
+  }, [s.view])
 
   // Pick the newest repo when none (or an unknown one) is in the URL.
   useEffect(() => {
@@ -225,6 +244,10 @@ export default function App() {
       if (e.key === '/') {
         e.preventDefault()
         askInput.current?.focus()
+      } else if (e.key === '[') {
+        setExplorerOpen((o) => !o)
+      } else if (e.key === ']') {
+        setInspectorOpen((o) => !o)
       } else if (e.key === 'Escape' && s.sel) {
         set({ sel: null })
       }
@@ -321,6 +344,7 @@ export default function App() {
               className={cx(
                 'min-h-0 shrink-0 flex-col border-r border-border-subtle bg-bg-1 max-lg:!w-full max-lg:flex-1',
                 pane === 'explorer' ? 'flex' : 'hidden lg:flex',
+                !explorerOpen && 'lg:!hidden',
               )}
             >
               {repoId !== null && (
@@ -340,7 +364,10 @@ export default function App() {
             <div
               {...explorerPanel.separatorProps}
               aria-label="Resize explorer"
-              className="hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent-500/60 lg:block"
+              className={cx(
+                'hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent-500/60',
+                explorerOpen && 'lg:block',
+              )}
             />
 
             {/* Canvas */}
@@ -348,28 +375,48 @@ export default function App() {
               aria-label="Workspace"
               className={cx('min-h-0 min-w-0 flex-1 flex-col bg-bg-0', pane === 'graph' ? 'flex' : 'hidden lg:flex')}
             >
-              <div role="tablist" aria-label="View" className="flex shrink-0 items-center border-b border-border-subtle bg-bg-1 px-2">
-                {VIEWS.map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={s.view === id}
-                    onClick={() => setView(id)}
-                    className={cx(
-                      'relative inline-flex h-10 items-center gap-1.5 px-3.5 text-[13px] font-medium transition-colors duration-150',
-                      s.view === id
-                        ? "text-text-1 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded after:bg-accent-500 after:content-['']"
-                        : 'text-text-2 hover:text-text-1',
-                    )}
+              <div className="shrink-0 border-b border-border-subtle bg-bg-1">
+                <div className="flex items-center px-2">
+                  <IconButton
+                    label={explorerOpen ? 'Hide explorer  [' : 'Show explorer  ['}
+                    pressed={explorerOpen}
+                    onClick={() => setExplorerOpen((o) => !o)}
+                    className="max-lg:hidden"
                   >
-                    <Icon size={14} aria-hidden />
-                    {label}
-                  </button>
-                ))}
+                    <PanelLeft size={16} aria-hidden />
+                  </IconButton>
+                  <div role="tablist" aria-label="View" className="flex items-center">
+                    {VIEWS.map(({ id, label, Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={s.view === id}
+                        onClick={() => setView(id)}
+                        className={cx(
+                          'relative inline-flex h-10 items-center gap-1.5 whitespace-nowrap px-3.5 text-[13px] font-medium transition-colors duration-150',
+                          s.view === id
+                            ? "text-text-1 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded after:bg-accent-500 after:content-['']"
+                            : 'text-text-2 hover:text-text-1',
+                        )}
+                      >
+                        <Icon size={14} aria-hidden />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <IconButton
+                    label={inspectorOpen ? 'Hide inspector  ]' : 'Show inspector  ]'}
+                    pressed={inspectorOpen}
+                    onClick={() => setInspectorOpen((o) => !o)}
+                    className="ml-auto max-lg:hidden"
+                  >
+                    <PanelRight size={16} aria-hidden />
+                  </IconButton>
+                </div>
 
                 {s.view === 'flow' && (
-                  <div className="ml-auto flex flex-wrap items-center gap-2 py-1">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-3 py-1.5">
                     <Segmented
                       label="Direction"
                       value={s.dir}
@@ -390,6 +437,7 @@ export default function App() {
                       label={s.outline ? 'Show graph' : 'Show as outline (text)'}
                       pressed={s.outline}
                       onClick={() => set({ outline: !s.outline })}
+                      className="ml-auto"
                     >
                       <ListTree size={16} aria-hidden />
                     </IconButton>
@@ -475,7 +523,10 @@ export default function App() {
             <div
               {...inspectorPanel.separatorProps}
               aria-label="Resize inspector"
-              className="hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent-500/60 lg:block"
+              className={cx(
+                'hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent-500/60',
+                inspectorOpen && 'lg:block',
+              )}
             />
 
             {/* Inspector */}
@@ -485,6 +536,7 @@ export default function App() {
               className={cx(
                 'min-h-0 shrink-0 flex-col border-l border-border-subtle bg-bg-1 max-lg:!w-full max-lg:flex-1',
                 pane === 'inspector' ? 'flex' : 'hidden lg:flex',
+                !inspectorOpen && 'lg:!hidden',
               )}
             >
               <Tabs.Root
@@ -612,7 +664,7 @@ function Legend() {
   return (
     <ul
       aria-label="Legend"
-      className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-md border border-border-subtle bg-bg-1/90 px-3 py-1.5 text-[12px] text-text-2"
+      className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-4 whitespace-nowrap rounded-md border border-border-subtle bg-bg-1/90 px-3 py-1.5 text-[12px] text-text-2"
     >
       <li className="flex items-center gap-1.5">
         <KeyRound size={13} className="text-auth" aria-hidden /> Auth

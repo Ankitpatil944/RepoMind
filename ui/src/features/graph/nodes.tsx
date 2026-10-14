@@ -1,4 +1,4 @@
-import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import { Handle, Position, useStore, type Node, type NodeProps } from '@xyflow/react'
 import { ArrowDownLeft, ArrowUpRight, Box, ExternalLink, FunctionSquare, KeyRound, Route } from 'lucide-react'
 
 import type { FlowNode } from '../../api/types'
@@ -25,6 +25,9 @@ const handles = (
     <Handle type="source" position={Position.Right} isConnectable={false} />
   </>
 )
+
+/** True when the canvas is zoomed out far enough that detail is unreadable. */
+const useCompact = () => useStore((s) => s.transform[2] < 0.5)
 
 const COMPLEXITY_WORD = (n: number) => (n <= 5 ? 'low' : n <= 10 ? 'moderate' : 'high')
 
@@ -60,6 +63,21 @@ function Metrics({ node }: { node: FlowNode }) {
 
 export function EndpointNode({ data, selected }: NodeProps<RFNode>) {
   const n = data.node
+  const compact = useCompact()
+  if (compact) {
+    return (
+      <div
+        className={cx(
+          'node-card flex h-full w-full items-center gap-2 rounded-lg border bg-bg-2 px-3',
+          selected ? SELECTED : 'border-border-control',
+        )}
+      >
+        {handles}
+        <span className="text-[22px] font-semibold leading-none">{n.method}</span>
+        <span className="truncate font-mono text-[22px]">{n.path}</span>
+      </div>
+    )
+  }
   return (
     <div
       className={cx(
@@ -92,6 +110,22 @@ export function EndpointNode({ data, selected }: NodeProps<RFNode>) {
 export function FunctionNode({ data, selected }: NodeProps<RFNode>) {
   const n = data.node
   const Icon = n.type === 'class' ? Box : FunctionSquare
+  const compact = useCompact()
+  if (compact) {
+    return (
+      <div
+        className={cx(
+          'node-card flex h-full w-full items-center gap-2 rounded-lg border bg-bg-2 px-3',
+          selected ? SELECTED : 'border-border-control',
+          n.auth_related && 'node-auth',
+        )}
+      >
+        {handles}
+        <Icon size={24} className="shrink-0 text-text-2" aria-hidden />
+        <span className="truncate font-mono text-[22px] font-medium">{n.label}</span>
+      </div>
+    )
+  }
   return (
     <div
       className={cx(

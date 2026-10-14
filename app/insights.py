@@ -2,6 +2,7 @@
 codebase *without* an LLM (structure, hotspots, dependencies, per-function facts)."""
 
 import posixpath
+import re
 import sys
 from collections import defaultdict
 
@@ -84,6 +85,19 @@ class ImportResolver:
             return None
 
         matches = self._by_suffix.get(rest, [])
+        # An absolute import is only valid relative to a *source root*: the
+        # directory above the matched module must be the importer's own
+        # directory or one of its ancestors (repo root, a service root, ...).
+        # Without this, `import logging` resolved to some other service's
+        # app/core/logging.py just because the file name matched.
+        tail = rest.replace(".", "/")
+        usable = []
+        for p in matches:
+            stem = p[: -len("/__init__.py")] if p.endswith("/__init__.py") else p[:-3]
+            prefix = stem[: len(stem) - len(tail)].rstrip("/")
+            if stem.endswith(tail) and (prefix == "" or importer.startswith(prefix + "/")):
+                usable.append(p)
+        matches = usable
         if not matches:
             return None
 
@@ -99,6 +113,8 @@ class ImportResolver:
 
 
     def is_first_party(self, name: str) -> bool:
+        if name in _STDLIB:
+            return False  # a local logging.py does not turn `import logging` first-party
         return name in self._first_party
 
 
@@ -107,6 +123,13 @@ def resolve_import(importer: str, module: str, language: str, paths: set[str]) -
 
 
 # --------------------------------------------------------------- vocabulary
+
+
+_TEST_PATH = re.compile(r"(^|/)(tests?|__tests__|spec)/|(^|/)(test_[^/]*|[^/]*_test\.py|conftest\.py)$|\.(test|spec)\.[jt]sx?$")
+
+
+def is_test_path(path: str) -> bool:
+    return bool(_TEST_PATH.search(path))
 
 
 def complexity_label(value: int) -> str:
@@ -231,6 +254,8 @@ def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
             "complexity": cx, "loc": loc, "doc": doc, **extra,
         }
 
+    # Hotspots are about the product code, so test files are left out of them.
+    funcs = [r for r in funcs if not is_test_path(r[3])]
     most_called = [
         item(r, fan_in=fan_in[r[0]])
         for r in sorted(funcs, key=lambda r: (-fan_in.get(r[0], 0), r[2]))
@@ -246,7 +271,7 @@ def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
         for r in sorted(funcs, key=lambda r: (-fan_in.get(r[0], 0), r[2]))
         if (AUTH_CALL_RE.search(r[1]) or GUARD_RE.search(r[1]))
     ][:8]
-    largest = sorted(files, key=lambda f: -f[3])[:8]
+    largest = sorted((f for f in files if not is_test_path(f[1])), key=lambda f: -f[3])[:8]
 
     # dependencies
     resolver = ImportResolver(paths)

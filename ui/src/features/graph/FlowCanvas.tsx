@@ -11,7 +11,8 @@ import { useMemo, useState } from 'react'
 
 import type { FlowGraph, FlowNode } from '../../api/types'
 import { EmptyState } from '../../design/primitives'
-import { layoutFlow, neighbourhood, pathEdgeIds, sizeOf } from '../../lib/graph'
+import { layoutBounds, layoutFlow, neighbourhood, pathEdgeIds, sizeOf, withinHops } from '../../lib/graph'
+import { FitController, type FitCandidate } from './FitController'
 import { edgeTypes, type RFEdge } from './edges'
 import { nodeTypes, type RFNode } from './nodes'
 
@@ -31,6 +32,23 @@ const MINIMAP_COLOR: Record<string, string> = {
 export function FlowCanvas({ flow, selected, onSelect, onRefocus }: Props) {
   const positions = useMemo(() => layoutFlow(flow), [flow])
   const byId = useMemo(() => new Map(flow.nodes.map((n) => [n.id, n])), [flow])
+  // Camera frames to try, largest first: everything, then 2 hops, then 1 hop
+  // from the root. The first one that stays readable at this canvas size wins.
+  const candidates = useMemo<FitCandidate[]>(() => {
+    const sized = flow.nodes.map((n) => ({ id: n.id, ...sizeOf(n) }))
+    const frame = (ids: string[]): FitCandidate => ({
+      ids,
+      bounds: layoutBounds(
+        sized.filter((n) => ids.includes(n.id)),
+        positions,
+      ),
+    })
+    return [
+      { ids: [], bounds: layoutBounds(sized, positions) },
+      frame(withinHops(flow, flow.root, 2)),
+      frame(withinHops(flow, flow.root, 1)),
+    ]
+  }, [flow, positions])
   const active = useMemo(() => pathEdgeIds(flow, selected), [flow, selected])
   // Hovering spotlights a node and its direct neighbours; everything else recedes.
   const [hover, setHover] = useState<string | null>(null)
@@ -107,14 +125,12 @@ export function FlowCanvas({ flow, selected, onSelect, onRefocus }: Props) {
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       colorMode="dark"
-      fitView
-      fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+      defaultViewport={{ x: 24, y: 24, zoom: 0.85 }}
       minZoom={0.2}
       maxZoom={1.6}
       nodesDraggable={false}
       nodesConnectable={false}
       zoomOnDoubleClick={false}
-      proOptions={{ hideAttribution: true }}
       onNodeClick={(_, n) => onSelect(n.data.node)}
       onNodeDoubleClick={(_, n) => onRefocus(n.data.node)}
       onNodeMouseEnter={(_, n) => setHover(n.id)}
@@ -135,10 +151,12 @@ export function FlowCanvas({ flow, selected, onSelect, onRefocus }: Props) {
     >
       <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="var(--border-subtle)" />
       <Controls showInteractive={false} position="bottom-left" />
+      <FitController candidates={candidates} deps={`${flow.root}|${flow.depth}|${flow.direction}`} />
       <MiniMap
         pannable
         zoomable
         position="bottom-right"
+        style={{ width: 150, height: 96, marginBottom: 28 }}
         nodeColor={(n) => MINIMAP_COLOR[n.type ?? 'function']}
         nodeStrokeWidth={0}
         ariaLabel="Graph overview"

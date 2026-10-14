@@ -133,6 +133,55 @@ def test_namespace_packages_are_first_party_not_dependencies():
     assert not r.is_first_party("fastapi")
 
 
+def test_stdlib_name_does_not_resolve_to_another_services_file():
+    """`import logging` must not become billing/app/core/logging.py."""
+    paths = {
+        "services/billing/app/core/logging.py",
+        "services/billing/app/main.py",
+        "services/auth/app/main.py",
+    }
+    r = ImportResolver(paths)
+
+    assert r.resolve("services/auth/app/main.py", "logging", "python") is None
+    assert r.resolve("services/billing/app/main.py", "logging", "python") is None
+    # ...but the real package path still resolves from the right place
+    assert (
+        r.resolve("services/billing/app/main.py", "app.core.logging", "python")
+        == "services/billing/app/core/logging.py"
+    )
+    assert r.resolve("services/auth/app/main.py", "app.core.logging", "python") is None
+
+
+def test_each_service_resolves_its_own_app_package():
+    paths = {
+        "services/a/app/db.py",
+        "services/b/app/db.py",
+        "services/a/app/main.py",
+        "services/b/app/main.py",
+    }
+    r = ImportResolver(paths)
+
+    assert r.resolve("services/a/app/main.py", "app.db", "python") == "services/a/app/db.py"
+    assert r.resolve("services/b/app/main.py", "app.db", "python") == "services/b/app/db.py"
+
+
+def test_stdlib_names_are_never_first_party_even_with_a_local_file_of_that_name():
+    r = ImportResolver({"services/x/app/core/logging.py"})
+
+    assert not r.is_first_party("logging")
+    assert r.is_first_party("core")
+
+
+def test_test_paths_are_recognised():
+    from app.insights import is_test_path
+
+    for p in ("tests/test_x.py", "services/a/tests/unit/helpers.py", "app/test_api.py",
+              "app/api_test.py", "conftest.py", "web/__tests__/a.js", "web/a.spec.ts"):
+        assert is_test_path(p), p
+    for p in ("app/contest.py", "app/latest.py", "app/testing_utils_prod.py", "app/routes/auth.py"):
+        assert not is_test_path(p), p
+
+
 def test_external_names_and_stdlib_classification():
     assert external_name("fastapi.APIRouter", "python") == "fastapi"
     assert external_name(".security", "python") is None

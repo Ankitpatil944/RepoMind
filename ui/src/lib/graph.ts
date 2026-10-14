@@ -3,9 +3,9 @@ import dagre from '@dagrejs/dagre'
 import type { FlowEdge, FlowGraph, FlowNode } from '../api/types'
 
 export const NODE_SIZE = {
-  endpoint: { width: 264, height: 92 },
-  function: { width: 288, height: 112 },
-  functionPlain: { width: 240, height: 66 }, // no signature/doc/metrics known
+  endpoint: { width: 250, height: 88 },
+  function: { width: 276, height: 142 },
+  functionPlain: { width: 224, height: 64 }, // no signature/doc/metrics known
   external: { width: 200, height: 46 },
 } as const
 
@@ -15,7 +15,51 @@ export function sizeOf(node: FlowNode): { width: number; height: number } {
   const rich = !!(node.signature || node.doc || node.loc)
   if (!rich) return NODE_SIZE.functionPlain
   // A docstring adds a clamped two-line paragraph.
-  return node.doc ? NODE_SIZE.function : { width: 288, height: 94 }
+  return node.doc ? NODE_SIZE.function : { width: 276, height: 106 }
+}
+
+/** Bounding box of a laid-out graph, used to decide how to frame the camera. */
+export function layoutBounds(
+  nodes: Array<{ id: string; width: number; height: number }>,
+  positions: Map<string, { x: number; y: number }>,
+): { width: number; height: number } {
+  let maxX = 0
+  let maxY = 0
+  let minX = Number.POSITIVE_INFINITY
+  let minY = Number.POSITIVE_INFINITY
+  for (const n of nodes) {
+    const p = positions.get(n.id)
+    if (!p) continue
+    minX = Math.min(minX, p.x)
+    minY = Math.min(minY, p.y)
+    maxX = Math.max(maxX, p.x + n.width)
+    maxY = Math.max(maxY, p.y + n.height)
+  }
+  if (!Number.isFinite(minX)) return { width: 1, height: 1 }
+  return { width: maxX - minX, height: maxY - minY }
+}
+
+/** Node ids within `hops` undirected steps of `from` (inclusive). */
+export function withinHops(flow: FlowGraph, from: string, hops: number): string[] {
+  const seen = new Set([from])
+  let frontier = [from]
+  for (let i = 0; i < hops; i++) {
+    const next: string[] = []
+    for (const e of flow.edges) {
+      for (const [a, b] of [
+        [e.source, e.target],
+        [e.target, e.source],
+      ] as const) {
+        if (frontier.includes(a) && !seen.has(b)) {
+          seen.add(b)
+          next.push(b)
+        }
+      }
+    }
+    frontier = next
+    if (!frontier.length) break
+  }
+  return [...seen]
 }
 
 /** Ids of a node and everything directly connected to it. */
@@ -33,7 +77,7 @@ export function neighbourhood(flow: FlowGraph, id: string | null): Set<string> {
 /** Left-to-right layered layout. Pure: same graph in, same positions out. */
 export function layoutFlow(flow: FlowGraph): Map<string, { x: number; y: number }> {
   const g = new dagre.graphlib.Graph()
-  g.setGraph({ rankdir: 'LR', nodesep: 26, ranksep: 70, marginx: 16, marginy: 16 })
+  g.setGraph({ rankdir: 'LR', nodesep: 18, ranksep: 52, marginx: 16, marginy: 16 })
   g.setDefaultEdgeLabel(() => ({}))
   // dagre stores x/y *on the label object*, so every node needs its own copy.
   for (const n of flow.nodes) g.setNode(n.id, { ...sizeOf(n) })

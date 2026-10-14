@@ -19,7 +19,7 @@ import type { Endpoint, HotFunction, Overview as OverviewData, Repo } from '../.
 import { ErrorNote } from '../../design/primitives'
 import { cx } from '../../lib/cx'
 import { useCountUp } from '../../lib/useCountUp'
-import { langColor } from './colors'
+import { langColor, langName } from './colors'
 import { Treemap } from './Treemap'
 
 interface Props {
@@ -187,8 +187,11 @@ function Card({
 }
 
 function Hero({ repo, o }: { repo: Repo; o: OverviewData }) {
-  const stack = [...o.frameworks.map((f) => (f === 'fastapi' ? 'FastAPI' : f[0].toUpperCase() + f.slice(1))),
-    ...o.languages.map((l) => l.language[0].toUpperCase() + l.language.slice(1))]
+  const FRAMEWORK: Record<string, string> = { fastapi: 'FastAPI', flask: 'Flask', express: 'Express', starlette: 'Starlette' }
+  const stack = [
+    ...o.frameworks.map((f) => FRAMEWORK[f] ?? f[0].toUpperCase() + f.slice(1)),
+    ...o.languages.map((l) => langName(l.language)),
+  ]
   return (
     <header className="rise-in">
       <p className="text-[12px] font-medium uppercase tracking-wide text-text-3">Repository overview</p>
@@ -207,16 +210,28 @@ function Hero({ repo, o }: { repo: Repo; o: OverviewData }) {
   )
 }
 
-function Stat({ label, value, icon, delay }: { label: string; value: number; icon: ReactNode; delay: number }) {
+function Stat({
+  label,
+  short,
+  value,
+  icon,
+  delay,
+}: {
+  label: string
+  short?: string
+  value: number
+  icon: ReactNode
+  delay: number
+}) {
   const shown = useCountUp(value)
   return (
     <div
       className="rise-in rounded-xl border border-border-subtle bg-bg-1 p-3.5"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center gap-1.5 text-[12px] text-text-2">
+      <div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-text-2" title={label}>
         <span aria-hidden>{icon}</span>
-        {label}
+        {short ?? label}
       </div>
       <div className="mt-1 font-mono text-[26px] font-medium leading-none tabular-nums" aria-label={`${fmt(value)} ${label}`}>
         {fmt(shown)}
@@ -230,11 +245,11 @@ function StatRow({ o }: { o: OverviewData }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <Stat label="Files" value={t.files} icon={<FileCode2 size={13} />} delay={0} />
-      <Stat label="Lines of code" value={t.loc} icon={<Braces size={13} />} delay={40} />
+      <Stat label="Lines of code" short="Lines" value={t.loc} icon={<Braces size={13} />} delay={40} />
       <Stat label="Functions" value={t.functions} icon={<Route size={13} />} delay={80} />
       <Stat label="Classes" value={t.classes} icon={<Boxes size={13} />} delay={120} />
       <Stat label="Endpoints" value={t.endpoints} icon={<GitFork size={13} />} delay={160} />
-      <Stat label="Module links" value={t.internal_links} icon={<Layers size={13} />} delay={200} />
+      <Stat label="Module links" short="Links" value={t.internal_links} icon={<Layers size={13} />} delay={200} />
     </div>
   )
 }
@@ -335,9 +350,10 @@ function LanguageBar({ o }: { o: OverviewData }) {
         {o.languages.map((l) => (
           <li key={l.language} className="flex items-center gap-2 text-[13px]">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: langColor(l.language) }} aria-hidden />
-            <span className="capitalize">{l.language}</span>
+            <span>{langName(l.language)}</span>
             <span className="ml-auto font-mono text-[12px] text-text-2">
-              {l.files} files · {fmt(l.loc)} lines · {Math.round((l.loc / total) * 100)}%
+              {l.files} file{l.files === 1 ? '' : 's'} · {fmt(l.loc)} line{l.loc === 1 ? '' : 's'} ·{' '}
+              {Math.round((l.loc / total) * 100)}%
             </span>
           </li>
         ))}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { FileEntry, FlowGraph } from '../api/types'
 import { citationRef, linkCitations } from './citations'
-import { buildOutline, layoutFlow, neighbourhood, pathEdgeIds } from './graph'
+import { buildOutline, layoutBounds, layoutFlow, neighbourhood, pathEdgeIds, withinHops } from './graph'
 import { buildHash, DEFAULT_STATE, parseHash } from './hash'
 import { layoutTreemap } from './treemap'
 import { ancestors, buildFileTree, flattenVisible } from './tree'
@@ -192,6 +192,31 @@ describe('treemap', () => {
   it('returns nothing for degenerate input', () => {
     expect(layoutTreemap([], 10, 10)).toEqual([])
     expect(layoutTreemap([{ id: 'a', value: 1 }], 0, 10)).toEqual([])
+  })
+})
+
+describe('camera framing', () => {
+  it('collects nodes within N hops of the root', () => {
+    expect(withinHops(FLOW, 'e:1', 0)).toEqual(['e:1'])
+    expect([...withinHops(FLOW, 'e:1', 1)].sort()).toEqual(['c:10', 'e:1'])
+    expect([...withinHops(FLOW, 'e:1', 2)].sort()).toEqual(['c:10', 'c:11', 'c:12', 'e:1'])
+    expect(withinHops(FLOW, 'e:1', 9)).toHaveLength(FLOW.nodes.length)
+  })
+
+  it('measures the bounding box of a subset of nodes', () => {
+    const positions = new Map([
+      ['a', { x: 0, y: 0 }],
+      ['b', { x: 300, y: 50 }],
+      ['c', { x: 900, y: 900 }],
+    ])
+    const nodes = [
+      { id: 'a', width: 100, height: 40 },
+      { id: 'b', width: 100, height: 40 },
+      { id: 'c', width: 100, height: 40 },
+    ]
+
+    expect(layoutBounds(nodes.slice(0, 2), positions)).toEqual({ width: 400, height: 90 })
+    expect(layoutBounds([], positions)).toEqual({ width: 1, height: 1 })
   })
 })
 

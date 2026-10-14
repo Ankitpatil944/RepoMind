@@ -102,10 +102,6 @@ summary {
   opacity: 0.35;
 }
 
-.react-flow__attribution {
-  display: none;
-}
-
 @keyframes edge-flow {
   to {
     stroke-dashoffset: -11;
@@ -408,4 +404,16 @@ summary {
 }
 .link-btn:hover {
   background: var(--bg-3);
+}
+
+/* Soft fade on the canvas's right edge: content past it is a pan away, and a
+   cropped card should read as "more this way", not as a rendering bug. */
+.graph-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 30px auto; /* leave the React Flow credit strip uncovered */
+  width: 56px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(to left, var(--bg-0), transparent);
 }

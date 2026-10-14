@@ -19,12 +19,14 @@ import type { ModuleGraph, ModuleNode } from '../../api/types'
 import { EmptyState, ErrorNote, Spinner } from '../../design/primitives'
 import { cx } from '../../lib/cx'
 import { edgeTypes, type RFEdge } from '../graph/edges'
+import { FitController, type FitCandidate } from '../graph/FitController'
+import { layoutBounds } from '../../lib/graph'
 import { langColor } from '../overview/colors'
 
 type ModuleData = { m: ModuleNode; maxLoc: number; col: number; dim: boolean } & Record<string, unknown>
 type RFModule = Node<ModuleData, 'module'>
 
-const SIZE = { width: 252, height: 96 }
+const SIZE = { width: 224, height: 92 }
 const SELECTED =
   'border-accent-500 shadow-[0_0_0_1px_var(--accent-500),0_0_24px_color-mix(in_srgb,var(--accent-500)_28%,transparent)] node-selected-ping'
 
@@ -73,7 +75,7 @@ const nodeTypes = { module: ModuleCard }
 
 function layout(g: ModuleGraph): Map<string, { x: number; y: number }> {
   const d = new dagre.graphlib.Graph()
-  d.setGraph({ rankdir: 'LR', nodesep: 28, ranksep: 90, marginx: 16, marginy: 16 })
+  d.setGraph({ rankdir: 'LR', nodesep: 20, ranksep: 64, marginx: 16, marginy: 16 })
   d.setDefaultEdgeLabel(() => ({}))
   for (const n of g.nodes) d.setNode(n.id, { ...SIZE })
   for (const e of g.edges) d.setEdge(e.source, e.target)
@@ -101,6 +103,28 @@ export function ArchitectureCanvas({ repo, root, selected, onRoot, onSelect, onO
 
   const positions = useMemo(() => (data ? layout(data) : new Map()), [data])
   const maxLoc = useMemo(() => Math.max(1, ...(data?.nodes ?? []).map((n) => n.loc)), [data])
+  // Frames to try: everything, then the most-connected module and its neighbours.
+  const candidates = useMemo<FitCandidate[]>(() => {
+    if (!data || data.nodes.length === 0) return []
+    const sized = data.nodes.map((n) => ({ id: n.id, ...SIZE }))
+    const top = [...data.nodes].sort((a, b) => b.degree - a.degree)[0]
+    const ids = new Set([top.id])
+    for (const e of data.edges) {
+      if (e.source === top.id) ids.add(e.target)
+      if (e.target === top.id) ids.add(e.source)
+    }
+    const near = [...ids]
+    return [
+      { ids: [], bounds: layoutBounds(sized, positions) },
+      {
+        ids: near,
+        bounds: layoutBounds(
+          sized.filter((n) => ids.has(n.id)),
+          positions,
+        ),
+      },
+    ]
+  }, [data, positions])
   const byId = useMemo(() => new Map((data?.nodes ?? []).map((n) => [n.id, n])), [data])
   const spotlight = useMemo(() => {
     const s = new Set<string>()
@@ -220,14 +244,12 @@ export function ArchitectureCanvas({ repo, root, selected, onRoot, onSelect, onO
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             colorMode="dark"
-            fitView
-            fitViewOptions={{ padding: 0.22, maxZoom: 1 }}
+            defaultViewport={{ x: 24, y: 24, zoom: 0.85 }}
             minZoom={0.2}
             maxZoom={1.6}
             nodesDraggable={false}
             nodesConnectable={false}
             zoomOnDoubleClick={false}
-            proOptions={{ hideAttribution: true }}
             aria-label="Module dependency map"
             onNodeClick={(_, n) => onSelect(n.data.m)}
             onNodeDoubleClick={(_, n) => {
@@ -248,7 +270,8 @@ export function ArchitectureCanvas({ repo, root, selected, onRoot, onSelect, onO
           >
             <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="var(--border-subtle)" />
             <Controls showInteractive={false} position="bottom-left" />
-            <MiniMap pannable zoomable position="bottom-right" nodeColor="var(--border-control)" nodeStrokeWidth={0} />
+            <FitController candidates={candidates} deps={`${repo}|${root}|${data.nodes.length}`} />
+            <MiniMap pannable zoomable position="bottom-right" style={{ width: 150, height: 96, marginBottom: 28 }} nodeColor="var(--border-control)" nodeStrokeWidth={0} />
           </ReactFlow>
         )}
         {data?.truncated && (

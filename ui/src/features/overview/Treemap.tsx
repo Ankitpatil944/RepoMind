@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import type { FileEntry } from '../../api/types'
 import { layoutTreemap } from '../../lib/treemap'
-import { langColor } from './colors'
+import { langColor, langName } from './colors'
 
 const W = 100
 const H = 52
@@ -136,7 +136,7 @@ export function Treemap({ files, onOpen }: Props) {
         {[...new Set(files.map((f) => f.language))].map((l) => (
           <li key={l} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: langColor(l) }} aria-hidden />
-            <span className="capitalize">{l}</span>
+            <span>{langName(l)}</span>
           </li>
         ))}
         <li className="flex items-center gap-1.5">
