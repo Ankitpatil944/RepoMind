@@ -130,10 +130,18 @@ const MODULES: ModuleGraph = {
   truncated: false,
   breadcrumb: [],
   nodes: [
-    { id: 'app', kind: 'dir', label: 'app', path: 'app', files: 10, loc: 380, endpoints: 15, complexity: 40, symbols: 30, languages: ['python'], degree: 3 },
-    { id: 'webhooks', kind: 'dir', label: 'webhooks', path: 'webhooks', files: 1, loc: 32, endpoints: 2, complexity: 5, symbols: 3, languages: ['javascript'], degree: 0 },
+    { id: 'app', kind: 'dir', label: 'app', path: 'app', files: 10, loc: 220, endpoints: 15, complexity: 40, symbols: 30, languages: ['python'], degree: 3 },
+    { id: 'webhooks', kind: 'dir', label: 'webhooks', path: 'webhooks', files: 4, loc: 180, endpoints: 2, complexity: 5, symbols: 3, languages: ['javascript'], degree: 0 },
   ],
   edges: [],
+}
+// one folder holds nearly everything, like services/ in a microservice repo
+const MODULES_DOMINANT: ModuleGraph = {
+  ...MODULES,
+  nodes: [
+    { ...MODULES.nodes[0], loc: 3800 },
+    { ...MODULES.nodes[1], loc: 32 },
+  ],
 }
 const MODULES_APP: ModuleGraph = {
   ...MODULES,
@@ -169,6 +177,7 @@ const FILE = {
 
 let calls: Array<{ url: string; method: string; body?: string }>
 let llmStatus: 'ready' | 'unreachable' = 'unreachable'
+let dominantFolder = false
 
 function route(url: string, init?: RequestInit): unknown {
   const u = new URL(url, 'http://test')
@@ -197,7 +206,10 @@ function route(url: string, init?: RequestInit): unknown {
     ]
   }
   if (p === '/repos/1/graph/flow') return FLOW
-  if (p === '/repos/1/graph/modules') return u.searchParams.get('root') === 'app' ? MODULES_APP : MODULES
+  if (p === '/repos/1/graph/modules') {
+    if (u.searchParams.get('root') === 'app') return MODULES_APP
+    return dominantFolder ? MODULES_DOMINANT : MODULES
+  }
   if (p === '/repos/1/files/content') return FILE
   if (p === '/repos/1/files/info') return FILE_INFO
   if (p === '/repos/1/chunks/100/facts') return FACTS
@@ -224,6 +236,7 @@ async function openLoginFlow() {
 beforeEach(() => {
   calls = []
   llmStatus = 'unreachable'
+  dominantFolder = false
   window.location.hash = ''
   vi.stubGlobal(
     'fetch',
@@ -373,6 +386,40 @@ describe('Architecture map', () => {
     expect(screen.getByRole('navigation', { name: 'Folder path' }).textContent).toContain('app')
   })
 
+  it('opens inside the folder that holds nearly all the code', async () => {
+    dominantFolder = true
+    renderApp()
+    await screen.findByRole('heading', { name: 'shop_api' })
+
+    fireEvent.click(screen.getByRole('tab', { name: /Architecture/ }))
+
+    // the top-level map would be "app + a tiny folder": it opens inside app instead
+    // the canvas remounts when the folder changes, so wait on the hash, then re-query
+    await waitFor(() => expect(window.location.hash).toContain('arch=app'))
+    expect(await screen.findByText('security.py')).toBeTruthy()
+    const crumbs = screen.getByRole('navigation', { name: 'Folder path' })
+    await waitFor(() => {
+      expect(crumbs.textContent).toContain('root')
+      expect(crumbs.textContent).toContain('app')
+    })
+  })
+
+  it('does not re-open the folder after you go back to the root', async () => {
+    dominantFolder = true
+    renderApp()
+    await screen.findByRole('heading', { name: 'shop_api' })
+    fireEvent.click(screen.getByRole('tab', { name: /Architecture/ }))
+    await waitFor(() => expect(window.location.hash).toContain('arch=app'))
+    await screen.findByText('security.py')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Repository root' }))
+
+    // back at the top level, and it stays there (no second automatic descent)
+    expect(await screen.findByText('webhooks')).toBeTruthy()
+    await new Promise((r) => setTimeout(r, 300))
+    expect(window.location.hash).not.toContain('arch=app')
+  })
+
   it('selecting a folder summarises it', async () => {
     renderApp()
     await screen.findByRole('heading', { name: 'shop_api' })
@@ -384,7 +431,7 @@ describe('Architecture map', () => {
 
     const inspector = screen.getByRole('complementary', { name: 'Inspector' })
     expect(await within(inspector).findByText('webhooks/')).toBeTruthy()
-    expect(within(inspector).getByText(/holds 1 file/)).toBeTruthy()
+    expect(within(inspector).getByText(/holds 4 files/)).toBeTruthy()
   })
 })
 

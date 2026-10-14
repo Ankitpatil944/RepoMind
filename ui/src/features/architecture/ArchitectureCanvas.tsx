@@ -12,7 +12,7 @@ import {
 } from '@xyflow/react'
 import dagre from '@dagrejs/dagre'
 import { ChevronRight, FileCode2, Folder, Home, Route } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useModules } from '../../api/hooks'
 import type { ModuleGraph, ModuleNode } from '../../api/types'
@@ -20,7 +20,7 @@ import { EmptyState, ErrorNote, Spinner } from '../../design/primitives'
 import { cx } from '../../lib/cx'
 import { edgeTypes, type RFEdge } from '../graph/edges'
 import { FitController, type FitCandidate } from '../graph/FitController'
-import { layoutBounds } from '../../lib/graph'
+import { layoutBounds, layoutGrid } from '../../lib/graph'
 import { langColor } from '../overview/colors'
 
 type ModuleData = { m: ModuleNode; maxLoc: number; col: number; dim: boolean } & Record<string, unknown>
@@ -74,6 +74,8 @@ function ModuleCard({ data, selected }: NodeProps<RFModule>) {
 const nodeTypes = { module: ModuleCard }
 
 function layout(g: ModuleGraph): Map<string, { x: number; y: number }> {
+  // Independent modules (e.g. separate microservices): a grid reads better than one column.
+  if (g.edges.length === 0) return layoutGrid(g.nodes.map((n) => n.id), SIZE)
   const d = new dagre.graphlib.Graph()
   d.setGraph({ rankdir: 'LR', nodesep: 20, ranksep: 64, marginx: 16, marginy: 16 })
   d.setDefaultEdgeLabel(() => ({}))
@@ -100,6 +102,20 @@ interface Props {
 export function ArchitectureCanvas({ repo, root, selected, onRoot, onSelect, onOpenFile }: Props) {
   const { data, isLoading, error } = useModules(repo, root, 'dir')
   const [hover, setHover] = useState<string | null>(null)
+
+  // Many repos keep everything under one folder (services/, src/, packages/).
+  // A map of "services, libs, one script" says nothing, so open inside it once.
+  // Going back to the root by hand is respected: this runs once per repo.
+  const decided = useRef<number | null>(null)
+  useEffect(() => {
+    if (!data || root !== '' || decided.current === repo || data.root !== '') return
+    decided.current = repo
+    const total = data.nodes.reduce((a, n) => a + n.loc, 0)
+    const top = [...data.nodes].sort((a, b) => b.loc - a.loc)[0]
+    if (top && top.kind === 'dir' && total > 0 && top.loc / total >= 0.85 && data.nodes.length <= 6) {
+      onRoot(top.path)
+    }
+  }, [data, root, repo, onRoot])
 
   const positions = useMemo(() => (data ? layout(data) : new Map()), [data])
   const maxLoc = useMemo(() => Math.max(1, ...(data?.nodes ?? []).map((n) => n.loc)), [data])

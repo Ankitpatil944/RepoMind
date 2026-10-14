@@ -514,6 +514,14 @@ export default function App() {
                         Showing the first {flow.nodes.length} nodes. Lower the depth or focus a narrower function.
                       </div>
                     )}
+                    {flow && !flow.truncated && flow.nodes.length > 30 && s.depth > 1 && (
+                      <div
+                        role="status"
+                        className="absolute left-3 top-3 rounded-md border border-border-control bg-bg-2 px-2.5 py-1.5 text-[12.5px]"
+                      >
+                        {flow.nodes.length} nodes. Try fewer hops, or the outline view, to simplify.
+                      </div>
+                    )}
                     {flow && hasFocus && <Legend />}
                   </div>
                 )}

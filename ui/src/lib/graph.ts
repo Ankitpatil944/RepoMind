@@ -18,6 +18,22 @@ export function sizeOf(node: FlowNode): { width: number; height: number } {
   return node.doc ? NODE_SIZE.function : { width: 276, height: 106 }
 }
 
+/** Grid layout for nodes with no relationships between them (a layered layout
+ *  would stack them in one tall column). Keeps the input order, row by row. */
+export function layoutGrid(
+  ids: string[],
+  size: { width: number; height: number },
+  gap = { x: 28, y: 24 },
+): Map<string, { x: number; y: number }> {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(ids.length * 1.6)))
+  return new Map(
+    ids.map((id, i) => [
+      id,
+      { x: (i % cols) * (size.width + gap.x), y: Math.floor(i / cols) * (size.height + gap.y) },
+    ]),
+  )
+}
+
 /** Bounding box of a laid-out graph, used to decide how to frame the camera. */
 export function layoutBounds(
   nodes: Array<{ id: string; width: number; height: number }>,

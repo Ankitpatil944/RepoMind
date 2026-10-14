@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { FileEntry, FlowGraph } from '../api/types'
 import { citationRef, linkCitations } from './citations'
-import { buildOutline, layoutBounds, layoutFlow, neighbourhood, pathEdgeIds, withinHops } from './graph'
+import { buildOutline, layoutBounds, layoutFlow, layoutGrid, neighbourhood, pathEdgeIds, withinHops } from './graph'
 import { buildHash, DEFAULT_STATE, parseHash } from './hash'
 import { layoutTreemap } from './treemap'
 import { ancestors, buildFileTree, flattenVisible } from './tree'
@@ -192,6 +192,29 @@ describe('treemap', () => {
   it('returns nothing for degenerate input', () => {
     expect(layoutTreemap([], 10, 10)).toEqual([])
     expect(layoutTreemap([{ id: 'a', value: 1 }], 0, 10)).toEqual([])
+  })
+})
+
+describe('grid layout', () => {
+  it('places unrelated nodes in rows, in order, without overlap', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+    const size = { width: 200, height: 80 }
+
+    const pos = layoutGrid(ids, size)
+
+    const xs = new Set([...pos.values()].map((p) => p.x))
+    const ys = new Set([...pos.values()].map((p) => p.y))
+    expect(xs.size).toBeGreaterThan(1) // more than one column
+    expect(ys.size).toBeGreaterThan(1) // and more than one row
+    expect(pos.get('a')).toEqual({ x: 0, y: 0 })
+    expect(pos.get('b')!.x).toBe(size.width + 28)
+    const cells = [...pos.values()].map((p) => `${p.x},${p.y}`)
+    expect(new Set(cells).size).toBe(ids.length) // every node has its own cell
+  })
+
+  it('handles a single node and an empty list', () => {
+    expect(layoutGrid(['only'], { width: 10, height: 10 }).get('only')).toEqual({ x: 0, y: 0 })
+    expect(layoutGrid([], { width: 10, height: 10 }).size).toBe(0)
   })
 })
 
