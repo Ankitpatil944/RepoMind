@@ -111,26 +111,36 @@ def chunk_facts_route(repo_id: int, chunk_id: int) -> dict:
 
 @router.get("/repos/{repo_id}/export")
 def export_repo(
-    repo_id: int, detail: str = "map", max_tokens: int = 30_000, format: str = "markdown"
+    repo_id: int,
+    detail: str = "map",
+    max_tokens: int = 30_000,
+    format: str = "markdown",
+    focus: str = "",
 ) -> dict:
     """A compact, token-budgeted text export of the repo to use as LLM context.
 
     detail: overview (a few k tokens) | map (routes + signatures) | source (map + key code).
+    focus: a folder (e.g. services/auth-service) to export in full detail instead of the whole repo.
     The budget is respected by dropping the least important material and saying so."""
     with db.connect() as conn:
         _require_repo(conn, repo_id)
         try:
-            return build_export(conn, repo_id, detail=detail, max_tokens=max_tokens, fmt=format)
+            return build_export(
+                conn, repo_id, detail=detail, max_tokens=max_tokens, fmt=format, focus=focus
+            )
         except ValueError as e:
             raise HTTPException(400, str(e)) from e
 
 
 @router.get("/repos/{repo_id}/export/estimate")
-def export_estimate(repo_id: int) -> dict:
+def export_estimate(repo_id: int, focus: str = "") -> dict:
     """Estimated tokens for each export level vs. pasting the raw source."""
     with db.connect() as conn:
         _require_repo(conn, repo_id)
-        return export_estimates(conn, repo_id)
+        try:
+            return export_estimates(conn, repo_id, focus)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
 
 
 @router.get("/repos/{repo_id}/files/info")

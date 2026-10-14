@@ -216,15 +216,31 @@ def _fan_in(conn: psycopg.Connection, repo_id: int) -> dict[int, int]:
 fan_in_by_chunk = _fan_in  # public name for other modules (export)
 
 
-def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
-    files = conn.execute(
+def under_prefix(path: str, prefix: str) -> bool:
+    """True if `path` is `prefix` itself or inside it ('' means everything)."""
+    return not prefix or path == prefix or path.startswith(prefix + "/")
+
+
+def repo_overview(conn: psycopg.Connection, repo_id: int, prefix: str = "") -> dict:
+    """Overview of the whole repo, or of one folder when `prefix` is given.
+
+    With a prefix, counts/hotspots/dependencies describe that folder only, but
+    caller counts still consider the whole repo (who else uses this code)."""
+    prefix = prefix.strip("/")
+    all_files = conn.execute(
         "SELECT id, path, language, loc FROM files WHERE repo_id = %s ORDER BY path", (repo_id,)
     ).fetchall()
-    paths = {p for _, p, _, _ in files}
+    paths = {p for _, p, _, _ in all_files}  # the resolver must see the whole repo
+    files = [f for f in all_files if under_prefix(f[1], prefix)]
 
     kinds = dict(
         conn.execute(
-            "SELECT kind, count(*) FROM chunks WHERE repo_id = %s GROUP BY kind", (repo_id,)
+            """
+            SELECT c.kind, count(*) FROM chunks c JOIN files f ON f.id = c.file_id
+            WHERE c.repo_id = %s AND (%s = '' OR f.path = %s OR starts_with(f.path, %s))
+            GROUP BY c.kind
+            """,
+            (repo_id, prefix, prefix, prefix + "/"),
         ).fetchall()
     )
     by_language: dict[str, dict] = {}
@@ -233,7 +249,7 @@ def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
         entry["files"] += 1
         entry["loc"] += loc
 
-    endpoints = list_endpoints(conn, repo_id)
+    endpoints = [e for e in list_endpoints(conn, repo_id) if under_prefix(e["file"], prefix)]
     auth = {
         "authentication": sum(e["handles_authentication"] for e in endpoints),
         "protected": sum(e["requires_auth"] and not e["handles_authentication"] for e in endpoints),
@@ -258,7 +274,7 @@ def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
         }
 
     # Hotspots are about the product code, so test files are left out of them.
-    funcs = [r for r in funcs if not is_test_path(r[3])]
+    funcs = [r for r in funcs if not is_test_path(r[3]) and under_prefix(r[3], prefix)]
     most_called = [
         item(r, fan_in=fan_in[r[0]])
         for r in sorted(funcs, key=lambda r: (-fan_in.get(r[0], 0), r[2]))
@@ -278,8 +294,8 @@ def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
 
     # dependencies
     resolver = ImportResolver(paths)
-    file_lang = {fid: lang for fid, _, lang, _ in files}
-    file_path = {fid: p for fid, p, _, _ in files}
+    file_lang = {fid: lang for fid, _, lang, _ in files}  # only files in scope are counted
+    file_path = {fid: p for fid, p, _, _ in all_files}
     third: dict[str, set[int]] = defaultdict(set)
     std: dict[str, set[int]] = defaultdict(set)
     internal_links: set[tuple[str, str]] = set()

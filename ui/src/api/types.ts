@@ -274,6 +274,17 @@ export interface ExportResult {
   omitted: { endpoints: number; files: number; symbols: number; source: number }
   files_included: number
   test_files_left_out: number
+  focus: string
+  redactions: { total: number; by_kind: Record<string, number> }
+  freshness: {
+    available: boolean
+    checked: number
+    changed: string[]
+    changed_count: number
+    missing_count: number
+    new_count: number
+    indexed_at: string | null
+  }
 }
 
 export interface ExportEstimate {

@@ -1,3 +1,9 @@
+import { configure } from '@testing-library/react'
+
+// Panes are code-split, so the first render of one loads a chunk. A generous
+// async timeout keeps the suite stable on slow or busy CI machines.
+configure({ asyncUtilTimeout: 5000 })
+
 // jsdom lacks several browser APIs that React Flow, cmdk and CodeMirror rely on.
 class ResizeObserverStub {
   observe() {}

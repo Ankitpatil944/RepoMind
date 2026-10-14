@@ -170,10 +170,12 @@ export function useCapabilities() {
   })
 }
 
-export function useExportEstimate(repo: number | null) {
+export function useExportEstimate(repo: number | null, focus = '') {
   return useQuery({
-    queryKey: ['export-estimate', repo],
-    queryFn: ({ signal }) => api.get<ExportEstimate>(`/repos/${repo}/export/estimate`, undefined, signal),
+    queryKey: ['export-estimate', repo, focus],
+    queryFn: ({ signal }) =>
+      api.get<ExportEstimate>(`/repos/${repo}/export/estimate`, { focus }, signal),
+    placeholderData: (prev) => prev,
     enabled: repo !== null,
     staleTime: 60_000,
     retry: false,
@@ -182,14 +184,14 @@ export function useExportEstimate(repo: number | null) {
 
 export function useExport(
   repo: number | null,
-  opts: { detail: ExportDetail; maxTokens: number; format: ExportFormat },
+  opts: { detail: ExportDetail; maxTokens: number; format: ExportFormat; focus: string },
 ) {
   return useQuery({
-    queryKey: ['export', repo, opts.detail, opts.maxTokens, opts.format],
+    queryKey: ['export', repo, opts.detail, opts.maxTokens, opts.format, opts.focus],
     queryFn: ({ signal }) =>
       api.get<ExportResult>(
         `/repos/${repo}/export`,
-        { detail: opts.detail, max_tokens: opts.maxTokens, format: opts.format },
+        { detail: opts.detail, max_tokens: opts.maxTokens, format: opts.format, focus: opts.focus },
         signal,
       ),
     enabled: repo !== null,

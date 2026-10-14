@@ -139,7 +139,7 @@ given by name or by id.
 | `search <repo> "<query>"` | Ranked code locations, no LLM needed |
 | `ask <repo> "<question>"` | Answer with `[n]` citations (needs an LLM) |
 | `endpoints <repo> [--auth authentication\|protected\|public]` | HTTP routes with auth classification |
-| `export <repo> [--detail overview\|map\|source] [--max-tokens N] [--format markdown\|json] [-o file]` | Token-budgeted context for an LLM |
+| `export <repo> [--detail overview\|map\|source] [--max-tokens N] [--format markdown\|json] [--focus folder] [-o file]` | Token-budgeted context for an LLM |
 
 The same features are available over HTTP (`/ingest`, `/search`, `/ask`,
 `/repos/{id}/endpoints`, `/repos/{id}/graph?name=fn`, `/repos/{id}/chunks`); see
@@ -155,6 +155,9 @@ those facts into compact text with a token budget:
 ```bash
 # CLI (Markdown to a file; add --format json for compact JSON)
 docker compose exec api python -m app.cli export my-project --detail map --max-tokens 16000 -o map.md
+
+# one service in full detail instead of a thin slice of everything
+docker compose exec api python -m app.cli export my-project --focus services/auth-service -o auth.md
 ```
 
 or use **Export** in the web UI header, which shows what each level costs before you copy it.
@@ -170,10 +173,27 @@ tokens**; the overview is **under 1,000**, and a budgeted map fits in 8,000 to 3
 ranked (routes first, then how depended-upon they are, then size) and the least important are left
 out *with a note saying what was dropped*. Test files are excluded.
 
-Notes: token counts are estimates (about 4 characters per token; real tokenizers vary by model).
-The export is generated from static analysis, so it contains no model output and is deterministic.
-It is plain ASCII, so it pastes cleanly anywhere. For *targeted* questions, pairing the overview with
-retrieval (`search`) is cheaper than any large dump.
+### Getting more out of a budget, and staying safe
+
+- **Scope it.** On a big monorepo a whole-repo map is a thin slice of everything. Pick a folder
+  (Scope in the dialog, or `--focus services/auth-service`) and that folder gets the full budget:
+  its routes, signatures and docs in detail, with caller counts that still look at the whole repo.
+- **Secrets are redacted, and counted.** AWS/GitHub/Stripe/Google/Slack keys, JWTs, private keys,
+  `password = "..."`-style assignments and passwords inside URLs are replaced with
+  `[REDACTED:kind]` before anything is written, and the export tells you how many it removed.
+  This is a safety net, not a guarantee: it cannot recognise an arbitrary string that happens to
+  be a secret, so skim an export before sending it to a third party.
+- **Staleness is reported.** Indexed files are compared with what is on disk now; if any changed
+  or disappeared, the export and the dialog say so and tell you to re-run ingest. If the project
+  folder isn't mounted, it says it can't check.
+- **Routes adapt to the budget.** The detailed route list (with handler names) is used when it
+  fits; under pressure it switches to a compact list so more routes survive.
+
+Other notes: token counts are estimates (about 4 characters per token; real tokenizers vary by
+model). The export is generated from static analysis, so it contains no model output and is
+deterministic. Typographic punctuation and emoji are normalised to plain text so it pastes cleanly
+anywhere; text in other languages is kept as UTF-8. For *targeted* questions, pairing the overview
+with retrieval (`search`) is cheaper than any large dump.
 
 ## How it works
 

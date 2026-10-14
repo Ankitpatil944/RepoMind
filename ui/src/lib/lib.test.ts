@@ -4,6 +4,7 @@ import type { FileEntry, FlowGraph } from '../api/types'
 import { citationRef, linkCitations } from './citations'
 import { buildOutline, layoutBounds, layoutFlow, layoutGrid, neighbourhood, pathEdgeIds, withinHops } from './graph'
 import { buildHash, DEFAULT_STATE, parseHash } from './hash'
+import { scopeOptions } from '../features/export/ExportDialog'
 import { layoutTreemap } from './treemap'
 import { ancestors, buildFileTree, flattenVisible } from './tree'
 
@@ -263,5 +264,28 @@ describe('citations', () => {
     expect(citationRef('#cite-4')).toBe(4)
     expect(citationRef('https://example.com')).toBeNull()
     expect(citationRef(undefined)).toBeNull()
+  })
+})
+
+describe('export scope options', () => {
+  it('lists folders up to two segments deep, biggest first', () => {
+    const files = [
+      { path: 'services/auth/app/a.py', loc: 300 },
+      { path: 'services/auth/app/b.py', loc: 200 },
+      { path: 'services/quiz/app/c.py', loc: 400 },
+      { path: 'libs/x.py', loc: 50 },
+      { path: 'main.py', loc: 999 }, // top-level file: not a folder
+    ]
+
+    const opts = scopeOptions(files)
+
+    expect(opts.map((o) => o.path)).toEqual([
+      'services',
+      'services/auth', // 500 lines
+      'services/quiz', // 400 lines
+      'libs',
+    ])
+    expect(opts[0].loc).toBe(900)
+    expect(opts.find((o) => o.path === 'main.py')).toBeUndefined()
   })
 })

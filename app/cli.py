@@ -107,6 +107,7 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
     s.add_argument("repo")
     s.add_argument("--detail", choices=["overview", "map", "source"], default="map")
     s.add_argument("--max-tokens", type=int, default=30_000)
+    s.add_argument("--focus", default="", help="export only this folder, e.g. services/auth-service")
     s.add_argument("--format", choices=["markdown", "json"], default="markdown")
     s.add_argument("-o", "--output", help="write to a file instead of stdout")
 
@@ -137,13 +138,23 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
             repo_id = resolve_repo(c, args.repo)
             r = c.get(
                 f"/repos/{repo_id}/export",
-                params={"detail": args.detail, "max_tokens": args.max_tokens, "format": args.format},
+                params={
+                    "detail": args.detail,
+                    "max_tokens": args.max_tokens,
+                    "format": args.format,
+                    "focus": args.focus,
+                },
             )
             _raise(r)
             d = r.json()
             note = f"~{d['estimated_tokens']:,} tokens (budget {d['budget']:,}, {d['detail']}, {d['format']})"
             if d["truncated"]:
                 note += "; trimmed to fit"
+            if d["redactions"]["total"]:
+                note += f"; {d['redactions']['total']} possible secrets redacted"
+            fr = d["freshness"]
+            if fr["available"] and fr["changed_count"]:
+                note += f"; WARNING {fr['changed_count']} files changed since indexing"
             if args.output:
                 with open(args.output, "w", encoding="utf-8") as fh:
                     fh.write(d["content"])

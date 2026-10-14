@@ -179,6 +179,8 @@ let calls: Array<{ url: string; method: string; body?: string }>
 let llmStatus: 'ready' | 'unreachable' = 'unreachable'
 let dominantFolder = false
 let endpointsOverride: Endpoint[] | null = null
+let exportFilesChanged = 0
+let exportNewFiles = 0
 
 function route(url: string, init?: RequestInit): unknown {
   const u = new URL(url, 'http://test')
@@ -213,6 +215,17 @@ function route(url: string, init?: RequestInit): unknown {
       omitted: { endpoints: 0, files: 4, symbols: 0, source: 0 },
       files_included: 9,
       test_files_left_out: 2,
+      focus: u.searchParams.get('focus') ?? '',
+      redactions: { total: 3, by_kind: { 'aws-access-key': 1, jwt: 2 } },
+      freshness: {
+        available: true,
+        checked: 9,
+        changed: exportFilesChanged ? ['app/security.py'] : [],
+        changed_count: exportFilesChanged,
+        missing_count: 0,
+        new_count: exportNewFiles,
+        indexed_at: null,
+      },
     }
   }
   if (p === '/repos/1/overview') return OVERVIEW
@@ -256,6 +269,8 @@ beforeEach(() => {
   llmStatus = 'unreachable'
   dominantFolder = false
   endpointsOverride = null
+  exportFilesChanged = 0
+  exportNewFiles = 0
   window.location.hash = ''
   vi.stubGlobal(
     'fetch',
@@ -653,6 +668,63 @@ describe('Export for an LLM', () => {
     expect(click).toHaveBeenCalled()
     expect(revoke).toHaveBeenCalledWith('blob:fake')
     click.mockRestore()
+  })
+})
+
+describe('Export scope, secrets and freshness', () => {
+  async function openExport() {
+    renderApp()
+    await screen.findByRole('heading', { name: 'shop_api' })
+    fireEvent.click(screen.getByRole('button', { name: /^Export$/ }))
+    return screen.findByRole('dialog', { name: 'Export for an LLM' })
+  }
+
+  it('offers the biggest folders as scopes and re-requests with the choice', async () => {
+    const dialog = await openExport()
+    const scope = await within(dialog).findByLabelText('Scope')
+    // folders derived from /files, biggest first
+    await within(dialog).findByRole('option', { name: 'app (103 lines)' })
+
+    fireEvent.change(scope, { target: { value: 'app/routes' } })
+
+    await waitFor(() =>
+      expect(
+        calls.some((c) => c.url === '/repos/1/export?detail=map&max_tokens=16000&format=markdown&focus=app%2Froutes'),
+      ).toBe(true),
+    )
+    // the cost table is re-measured for that folder too
+    await waitFor(() => expect(calls.some((c) => c.url === '/repos/1/export/estimate?focus=app%2Froutes')).toBe(true))
+  })
+
+  it('says how many possible secrets were redacted', async () => {
+    const dialog = await openExport()
+
+    const chip = await within(dialog).findByText('3 possible secrets redacted')
+    expect(chip.getAttribute('title')).toContain('2 jwt')
+  })
+
+  it('warns when indexed files changed on disk', async () => {
+    exportFilesChanged = 2
+    const dialog = await openExport()
+
+    const alert = await within(dialog).findByRole('alert')
+    expect(alert.textContent).toContain('2 files changed on disk')
+    expect(alert.textContent).toContain('Index project')
+  })
+
+  it('warns about new files that were never indexed', async () => {
+    exportNewFiles = 3
+    const dialog = await openExport()
+
+    const alert = await within(dialog).findByRole('alert')
+    expect(alert.textContent).toContain('3 new')
+  })
+
+  it('stays quiet when the index is fresh', async () => {
+    const dialog = await openExport()
+    await within(dialog).findByText('3 possible secrets redacted')
+
+    expect(within(dialog).queryByRole('alert')).toBeNull()
   })
 })
 
