@@ -2,7 +2,8 @@ import { useCallback, useSyncExternalStore } from 'react'
 
 import type { Direction } from '../api/types'
 
-export type InspectorTab = 'source' | 'explain' | 'evidence'
+export type InspectorTab = 'summary' | 'source' | 'explain' | 'evidence'
+export type View = 'overview' | 'architecture' | 'flow'
 export type ExplorerTab = 'files' | 'symbols' | 'endpoints'
 
 /** Everything that defines "what the user is looking at", kept in the URL hash
@@ -20,6 +21,8 @@ export interface AppState {
   depth: number
   dir: Direction
   outline: boolean
+  view: View
+  arch: string // architecture view: directory being drilled into ('' = top)
 }
 
 export const DEFAULT_STATE: AppState = {
@@ -30,11 +33,13 @@ export const DEFAULT_STATE: AppState = {
   file: null,
   start: null,
   end: null,
-  tab: 'source',
+  tab: 'summary',
   ex: 'endpoints',
   depth: 3,
   dir: 'down',
   outline: false,
+  view: 'overview',
+  arch: '',
 }
 
 const int = (v: string | null): number | null => {
@@ -56,11 +61,13 @@ export function parseHash(hash: string): AppState {
     file: p.get('file'),
     start: int(p.get('start')),
     end: int(p.get('end')),
-    tab: oneOf(p.get('tab'), ['source', 'explain', 'evidence'] as const, DEFAULT_STATE.tab),
+    tab: oneOf(p.get('tab'), ['summary', 'source', 'explain', 'evidence'] as const, DEFAULT_STATE.tab),
     ex: oneOf(p.get('ex'), ['files', 'symbols', 'endpoints'] as const, DEFAULT_STATE.ex),
     depth: depth === null ? DEFAULT_STATE.depth : Math.min(4, Math.max(1, depth)),
     dir: oneOf(p.get('dir'), ['down', 'up', 'both'] as const, DEFAULT_STATE.dir),
     outline: p.get('outline') === '1',
+    view: oneOf(p.get('view'), ['overview', 'architecture', 'flow'] as const, DEFAULT_STATE.view),
+    arch: (p.get('arch') ?? '').replace(/^\/+|\/+$/g, ''),
   }
 }
 
@@ -81,6 +88,8 @@ export function buildHash(state: AppState): string {
   if (state.depth !== DEFAULT_STATE.depth) put('depth', state.depth)
   if (state.dir !== DEFAULT_STATE.dir) put('dir', state.dir)
   if (state.outline) put('outline', 1)
+  if (state.view !== DEFAULT_STATE.view) put('view', state.view)
+  put('arch', state.arch)
   const s = p.toString()
   return s ? `#${s}` : ''
 }

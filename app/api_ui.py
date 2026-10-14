@@ -2,8 +2,10 @@
 symbol search, call-flow graph, per-node explanation)."""
 
 import hashlib
+import os
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -11,6 +13,7 @@ from app import db, llm
 from app.ask import build_explain_messages, citation
 from app.graph import FlowTargetNotFound, call_flow, list_endpoints
 from app.ingest.walker import MAX_FILE_BYTES
+from app.insights import chunk_facts, file_info, module_graph, repo_overview
 from app.retrieval import Hit
 
 router = APIRouter()
@@ -31,15 +34,89 @@ def list_files(repo_id: int) -> list[dict]:
             """
             SELECT f.path, f.language,
                    (SELECT count(*) FROM chunks c WHERE c.file_id = f.id AND c.kind <> 'module'),
-                   (SELECT count(*) FROM endpoints e WHERE e.file_id = f.id)
+                   (SELECT count(*) FROM endpoints e WHERE e.file_id = f.id),
+                   f.loc,
+                   (SELECT coalesce(sum(c.complexity), 0) FROM chunks c
+                      WHERE c.file_id = f.id AND c.kind IN ('function', 'method'))
             FROM files f WHERE f.repo_id = %s ORDER BY f.path
             """,
             (repo_id,),
         ).fetchall()
     return [
-        {"path": p, "language": lang, "symbols": symbols, "endpoints": eps}
-        for p, lang, symbols, eps in rows
+        {
+            "path": p,
+            "language": lang,
+            "symbols": symbols,
+            "endpoints": eps,
+            "loc": loc,
+            "complexity": int(cx),
+        }
+        for p, lang, symbols, eps, loc, cx in rows
     ]
+
+
+@router.get("/capabilities")
+def capabilities() -> dict:
+    """What optional pieces are available, so the UI can explain itself when
+    something (usually the LLM) is missing. Never raises."""
+    base = os.environ.get("LLM_BASE_URL", "http://host.docker.internal:11434/v1").rstrip("/")
+    model = os.environ.get("LLM_MODEL", "qwen2.5-coder:7b")
+    try:
+        r = httpx.get(f"{base}/models", timeout=1.5, headers=_llm_headers())
+        status = "ready" if r.status_code < 500 else "error"
+    except httpx.HTTPError:
+        status = "unreachable"
+    return {
+        "llm": {"status": status, "base_url": base, "model": model},
+        "embedder": os.environ.get("EMBEDDER", "fastembed"),
+        "reranker": os.environ.get("RERANKER", "fastembed"),
+    }
+
+
+def _llm_headers() -> dict[str, str]:
+    key = os.environ.get("LLM_API_KEY")
+    return {"Authorization": f"Bearer {key}"} if key else {}
+
+
+@router.get("/repos/{repo_id}/overview")
+def overview(repo_id: int) -> dict:
+    """Repo-level picture computed from static analysis (no LLM needed)."""
+    with db.connect() as conn:
+        _require_repo(conn, repo_id)
+        return repo_overview(conn, repo_id)
+
+
+@router.get("/repos/{repo_id}/graph/modules")
+def graph_modules(repo_id: int, root: str = "", level: str = "dir") -> dict:
+    """Dependency graph between directories (drill in with `root`) or files."""
+    if level not in ("dir", "file"):
+        raise HTTPException(400, "level must be dir or file")
+    with db.connect() as conn:
+        _require_repo(conn, repo_id)
+        return module_graph(conn, repo_id, root, level)
+
+
+@router.get("/repos/{repo_id}/chunks/{chunk_id}/facts")
+def chunk_facts_route(repo_id: int, chunk_id: int) -> dict:
+    """Signature, docstring, complexity, callers/callees and a plain-language
+    summary of one function or class, derived without an LLM."""
+    with db.connect() as conn:
+        _require_repo(conn, repo_id)
+        facts = chunk_facts(conn, repo_id, chunk_id)
+    if facts is None:
+        raise HTTPException(404, f"chunk {chunk_id} not found")
+    return facts
+
+
+@router.get("/repos/{repo_id}/files/info")
+def file_info_route(repo_id: int, path: str) -> dict:
+    """What a file is: docs, symbols with signatures, imports and importers."""
+    with db.connect() as conn:
+        _require_repo(conn, repo_id)
+        info = file_info(conn, repo_id, path)
+    if info is None:
+        raise HTTPException(404, f"file not indexed: {path}")
+    return info
 
 
 @router.get("/repos/{repo_id}/files/content")

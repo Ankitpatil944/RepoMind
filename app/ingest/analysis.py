@@ -142,6 +142,22 @@ def _py_depends(node: Node) -> list[str]:
     return out
 
 
+def _py_depends_refs(node: Node) -> list[tuple[str, int]]:
+    """`Depends(get_current_user)` -> ("get_current_user", line).
+
+    FastAPI wires auth guards by *reference*, not by calling them, so without
+    this the guard behind a protected route never shows up in the call graph."""
+    out = []
+    for n in _walk(node):
+        if n.type == "call" and _py_target(n) in _PY_DEPENDS:
+            positional, _ = _py_args(n)
+            if positional and positional[0].type in ("identifier", "attribute"):
+                text = _txt(positional[0])
+                if "(" not in text:
+                    out.append((text, n.start_point.row + 1))
+    return out
+
+
 def _py_framework(imports: list[str], target_attr: str) -> str:
     modules = {i.split(".")[0].lstrip(".") for i in imports}
     if "fastapi" in modules:
@@ -165,7 +181,17 @@ def _analyze_python(root: Node) -> Analysis:
         elif n.type == "import_from_statement":
             module = n.child_by_field_name("module_name")
             if module is not None:
-                result.imports.append(_txt(module))
+                base = _txt(module)
+                result.imports.append(base)
+                # `from app.routes import auth` may import a *module*, so also
+                # record `app.routes.auth`; the module graph resolves whichever exists.
+                joiner = "" if base.endswith(".") else "."
+                for c in n.named_children:
+                    if c == module:
+                        continue
+                    name = c.child_by_field_name("name") if c.type == "aliased_import" else c
+                    if name is not None and name.type == "dotted_name":
+                        result.imports.append(f"{base}{joiner}{_txt(name)}")
         elif n.type == "call":
             target = _py_target(n)
             if target:
@@ -188,6 +214,8 @@ def _analyze_python(root: Node) -> Analysis:
             if prefix:
                 prefixes[_txt(left)] = prefix
             router_signals[_txt(left)] = _py_depends(right)
+            for text, line in _py_depends_refs(right):
+                result.calls.append(Call(text.rsplit(".", 1)[-1], text, line))
 
     for n in _walk(root):
         if n.type != "decorated_definition":
@@ -208,6 +236,8 @@ def _analyze_python(root: Node) -> Analysis:
             else:
                 target = _txt(expr) if expr.type in ("identifier", "attribute") else None
             signals.extend(_py_depends(dec))
+            for text, line in _py_depends_refs(dec):
+                result.calls.append(Call(text.rsplit(".", 1)[-1], text, line))
             found = _py_route(expr, target) if expr.type == "call" and target else None
             if found:
                 obj, _, attr = target.rpartition(".")
@@ -222,6 +252,8 @@ def _analyze_python(root: Node) -> Analysis:
         params = definition.child_by_field_name("parameters")
         if params is not None:
             signals.extend(_py_depends(params))
+            for text, line in _py_depends_refs(params):
+                result.calls.append(Call(text.rsplit(".", 1)[-1], text, line))
 
         for method, path, attr, obj in routes:
             result.endpoints.append(

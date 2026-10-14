@@ -37,6 +37,9 @@ $ python -m app.cli search shop_api "where are passwords hashed"
   splitting), fused with rank fusion and re-ranked by a cross-encoder.
 - **Finds your API.** Detects HTTP routes (FastAPI, Flask, Express), their handlers, and
   whether each one *performs* or *requires* authentication, with the evidence.
+- **Understand a repo without any AI.** Overview, treemap, architecture map, call flow and
+  per-function summaries are computed from the code itself, so they work offline with no API
+  key. A language model is optional and only adds written explanations.
 - **Call graph you can explore.** "Who calls this?" and "what does this call?" as an
   interactive graph, from any endpoint or function, with auth evidence highlighted.
 - **Measured, not vibes.** A built-in evaluation harness scores retrieval and endpoint
@@ -67,21 +70,34 @@ Everything above works **without any API key or LLM**. Interactive API docs live
 ### Open the web UI
 
 Go to **<http://localhost:8000>**. Click **Index project → Index sample project**, or run the
-`ingest` command above, then explore:
+`ingest` command above. **None of this needs an API key or a language model.**
 
-- **Graph** (centre): pick an endpoint and see what it calls, where authentication happens,
-  and which calls leave the repo (dashed nodes). Click a node to select it, double-click to
-  re-centre the graph on it, and use *Calls / Callers / Both* and the depth control to widen
-  or narrow the view. The list icon switches to a text outline of the same graph.
-- **Explorer** (left): endpoints with their auth role, a file tree, and symbol search.
-- **Inspector** (right): **Source** with the selected code highlighted, **Explain** for a
-  written explanation of the selected function or an answer to your question (with clickable
-  `[n]` citations), and **Evidence** for *why* something was classified as auth or protected.
-- **Ctrl/⌘ K** opens a command palette; **/** focuses the ask box. Every view has a shareable
-  URL (the state lives in the address bar).
+The UI has three views over the same index:
 
-The graph, explorer, source and evidence work with no LLM. Written explanations need one
-(see below).
+- **Overview**: the repository at a glance. File, line, function, class and endpoint counts,
+  language mix, an auth-surface breakdown, a **treemap of every file sized by lines of code**,
+  hotspots (most-called, most-complex, largest), auth guard functions, and the third-party
+  libraries it depends on. A "Start here" row jumps into the most interesting flows.
+- **Architecture**: a dependency map of folders (double-click to drill down to files) built from
+  resolved imports. Node size and bars show code volume; arrows show who imports whom.
+- **Call flow**: pick an endpoint or function and see what it calls, with each node showing its
+  signature, docstring, size, complexity and fan-in/out. Unresolved external calls (for example
+  `jwt.decode`) are dashed nodes so authentication evidence is visible. Hover a node to spotlight
+  its neighbours, double-click to re-centre, and use *Calls / Callers / Both* and depth to widen
+  or narrow it. The list icon shows the same graph as a text outline.
+
+The right-hand **Inspector** has four tabs:
+
+| Tab | What it gives you | Needs a model? |
+|---|---|---|
+| **Summary** | Plain-language facts about a function, file or folder: signature, docs, complexity, callers, callees, routes handled, imports | No |
+| **Source** | The code, with the selected range highlighted | No |
+| **Evidence** | Why an endpoint was classified as auth/protected | No |
+| **Explain** | A written explanation and answers to questions, with `[n]` citations | Yes |
+
+Press **Ctrl/⌘ K** for the command palette and **/** to focus the ask box. Every view has a
+shareable URL (state lives in the address bar). The header shows **AI on / AI off**, so it is
+always clear which features are available; with AI off, everything structural still works.
 
 ### Index your own project
 
@@ -263,11 +279,10 @@ tests/      unit and integration tests
 ## Roadmap
 
 Done: ingestion, hybrid retrieval + reranking, cited answers, endpoint/auth detection,
-call graph, incremental re-indexing, evaluation harness with CI gate, CLI, web UI with an
-interactive call graph.
+call graph, incremental re-indexing, evaluation harness with CI gate, CLI, web UI (overview,
+architecture map, interactive call graph, static summaries).
 
-Planned: module-level (import) graph view, TypeScript and more frameworks, cross-file router
-prefixes, indexing Git URLs directly, larger benchmark, background indexing jobs,
+Planned: TypeScript and more frameworks, cross-file router prefixes, indexing Git URLs directly, larger benchmark, background indexing jobs,
 LLM-judged faithfulness, streaming answers.
 
 ## Contributing

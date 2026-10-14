@@ -127,7 +127,11 @@ def _chunk_nodes(conn: psycopg.Connection, repo_id: int, ids: list[int]) -> dict
         return {}
     rows = conn.execute(
         """
-        SELECT c.id, c.name, c.qualified_name, c.kind, f.path, c.start_line, c.end_line
+        SELECT c.id, c.name, c.qualified_name, c.kind, f.path, c.start_line, c.end_line,
+               c.signature, c.doc, c.complexity, c.loc,
+               (SELECT count(DISTINCT e.caller_chunk_id) FROM call_edges e
+                  WHERE e.callee_chunk_id = c.id AND e.caller_chunk_id <> c.id),
+               (SELECT count(*) FROM call_edges e WHERE e.caller_chunk_id = c.id)
         FROM chunks c JOIN files f ON f.id = c.file_id
         WHERE c.repo_id = %s AND c.id = ANY(%s)
         """,
@@ -144,8 +148,15 @@ def _chunk_nodes(conn: psycopg.Connection, repo_id: int, ids: list[int]) -> dict
             "end_line": end,
             "chunk_id": cid,
             "auth_related": bool(AUTH_CALL_RE.search(name)),
+            "signature": signature,
+            "doc": doc,
+            "complexity": cx,
+            "loc": loc,
+            "fan_in": fan_in,
+            "fan_out": fan_out,
         }
-        for cid, name, qualified, kind, path, start, end in rows
+        for (cid, name, qualified, kind, path, start, end,
+             signature, doc, cx, loc, fan_in, fan_out) in rows
     }
 
 
@@ -202,6 +213,7 @@ def call_flow(
             "start_line": e["line"],
             "end_line": e["line"],
             "endpoint_id": e["id"],
+            "handler_chunk_id": e["handler_chunk_id"],
             "handles_authentication": e["handles_authentication"],
             "requires_auth": e["requires_auth"],
             "evidence": e["evidence"],

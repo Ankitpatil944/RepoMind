@@ -69,6 +69,22 @@ def test_javascript_imports_include_require():
     assert all(c.callee_name != "require" for c in result.calls)
 
 
+def test_depends_references_become_dependency_edges():
+    source = (
+        b"router = APIRouter(dependencies=[Depends(audit_log)])\n"
+        b"@router.get('/me', dependencies=[Depends(require_admin)])\n"
+        b"def me(user=Depends(security.get_current_user), n: int = Depends(get_count())):\n"
+        b"    return user\n"
+    )
+
+    calls = {(c.callee_name, c.callee_full) for c in analyze_source(source, "python").calls}
+
+    assert ("audit_log", "audit_log") in calls  # router-level
+    assert ("require_admin", "require_admin") in calls  # decorator-level
+    assert ("get_current_user", "security.get_current_user") in calls  # parameter default
+    assert not any("(" in full for _, full in calls)  # Depends(get_count()) is skipped
+
+
 def test_python_calls_on_call_results_are_not_recorded_as_names():
     source = (
         b"def f(conn, raw):\n"

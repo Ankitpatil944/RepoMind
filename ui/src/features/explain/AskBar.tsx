@@ -6,10 +6,11 @@ import { Kbd } from '../../design/primitives'
 interface Props {
   disabled: boolean
   pending: boolean
+  aiStatus?: 'ready' | 'unreachable' | 'error' | null
   onAsk: (question: string) => void
 }
 
-export const AskBar = forwardRef<HTMLInputElement, Props>(function AskBar({ disabled, pending, onAsk }, ref) {
+export const AskBar = forwardRef<HTMLInputElement, Props>(function AskBar({ disabled, pending, aiStatus, onAsk }, ref) {
   const [text, setText] = useState('')
   return (
     <form
@@ -31,7 +32,11 @@ export const AskBar = forwardRef<HTMLInputElement, Props>(function AskBar({ disa
         value={text}
         onChange={(e) => setText(e.target.value)}
         disabled={disabled}
-        placeholder="How do users log in? Which endpoints require authentication?"
+        placeholder={
+          aiStatus && aiStatus !== 'ready'
+            ? 'Search the code (AI is off, so you get the matching code, not a written answer)'
+            : 'How do users log in? Which endpoints require authentication?'
+        }
         className="h-9 min-w-0 flex-1 rounded-md border border-border-control bg-bg-2 px-3 text-[14px] text-text-1 placeholder:text-text-3 disabled:opacity-60"
       />
       <span className="hidden items-center gap-1 text-[12px] text-text-3 md:inline-flex">

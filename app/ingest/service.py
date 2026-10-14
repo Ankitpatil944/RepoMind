@@ -5,7 +5,7 @@ import psycopg
 
 from app.embed import Embedder, get_embedder, to_pgvector
 from app.ingest.analysis import analyze_source
-from app.ingest.parser import parse_source
+from app.ingest.parser import Chunk, count_loc, parse_source
 from app.ingest.walker import iter_source_files
 from app.text import embedding_text, search_text
 
@@ -41,10 +41,40 @@ def embed_pending(conn: psycopg.Connection, repo_id: int, embedder: Embedder) ->
     return len(rows)
 
 
-def _store_analysis(
-    conn: psycopg.Connection, repo_id: int, file_id: int, data: bytes, language: str
+def _refresh_metrics(
+    conn: psycopg.Connection, file_id: int, data: bytes, chunks: list[Chunk]
 ) -> None:
-    """Imports, call edges and endpoints for one file (replaces earlier rows)."""
+    """Fill signature / doc / complexity / loc for chunks stored by an older
+    version, matching them to freshly parsed ones by kind + name + start line."""
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            UPDATE chunks SET signature = %s, doc = %s, complexity = %s, loc = %s
+            WHERE file_id = %s AND kind = %s AND qualified_name = %s AND start_line = %s
+            """,
+            [
+                (c.signature, c.doc, c.complexity, c.loc, file_id, c.kind, c.qualified_name, c.start_line)
+                for c in chunks
+            ],
+        )
+    conn.execute("UPDATE files SET loc = %s WHERE id = %s", (count_loc(data), file_id))
+
+
+def _store_analysis(
+    conn: psycopg.Connection,
+    repo_id: int,
+    file_id: int,
+    data: bytes,
+    language: str,
+    chunks: list[Chunk] | None = None,
+) -> None:
+    """Imports, call edges and endpoints for one file (replaces earlier rows).
+
+    `chunks` is passed for a freshly inserted file (metrics already stored);
+    when omitted the file is being re-analyzed, so metrics are refreshed too."""
+    if chunks is None:
+        _refresh_metrics(conn, file_id, data, parse_source(data, language))
+
     chunk_rows = conn.execute(
         "SELECT id, start_line, end_line FROM chunks WHERE file_id = %s", (file_id,)
     ).fetchall()
@@ -179,8 +209,11 @@ def ingest_repo(
             conn.execute("DELETE FROM files WHERE id = %s", (file_id,))
 
         file_id = conn.execute(
-            "INSERT INTO files (repo_id, path, language, sha256) VALUES (%s, %s, %s, %s) RETURNING id",
-            (repo_id, rel_path, language, sha),
+            """
+            INSERT INTO files (repo_id, path, language, sha256, loc)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id
+            """,
+            (repo_id, rel_path, language, sha, count_loc(data)),
         ).fetchone()[0]
 
         chunks = parse_source(data, language)
@@ -188,15 +221,19 @@ def ingest_repo(
             cur.executemany(
                 """
                 INSERT INTO chunks
-                    (file_id, repo_id, kind, name, qualified_name, start_line, end_line, content)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    (file_id, repo_id, kind, name, qualified_name, start_line, end_line,
+                     content, signature, doc, complexity, loc)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 [
-                    (file_id, repo_id, c.kind, c.name, c.qualified_name, c.start_line, c.end_line, c.content)
+                    (
+                        file_id, repo_id, c.kind, c.name, c.qualified_name, c.start_line,
+                        c.end_line, c.content, c.signature, c.doc, c.complexity, c.loc,
+                    )
                     for c in chunks
                 ],
             )
-        _store_analysis(conn, repo_id, file_id, data, language)
+        _store_analysis(conn, repo_id, file_id, data, language, chunks)
         stats["files_indexed"] += 1
         stats["files_analyzed"] += 1
         stats["chunks"] += len(chunks)

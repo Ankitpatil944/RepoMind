@@ -3,15 +3,31 @@ import dagre from '@dagrejs/dagre'
 import type { FlowEdge, FlowGraph, FlowNode } from '../api/types'
 
 export const NODE_SIZE = {
-  endpoint: { width: 244, height: 70 },
-  function: { width: 220, height: 62 },
+  endpoint: { width: 264, height: 92 },
+  function: { width: 288, height: 112 },
+  functionPlain: { width: 240, height: 66 }, // no signature/doc/metrics known
   external: { width: 200, height: 46 },
 } as const
 
 export function sizeOf(node: FlowNode): { width: number; height: number } {
   if (node.type === 'endpoint') return NODE_SIZE.endpoint
   if (node.type === 'external') return NODE_SIZE.external
-  return NODE_SIZE.function
+  const rich = !!(node.signature || node.doc || node.loc)
+  if (!rich) return NODE_SIZE.functionPlain
+  // A docstring adds a clamped two-line paragraph.
+  return node.doc ? NODE_SIZE.function : { width: 288, height: 94 }
+}
+
+/** Ids of a node and everything directly connected to it. */
+export function neighbourhood(flow: FlowGraph, id: string | null): Set<string> {
+  const out = new Set<string>()
+  if (!id) return out
+  out.add(id)
+  for (const e of flow.edges) {
+    if (e.source === id) out.add(e.target)
+    if (e.target === id) out.add(e.source)
+  }
+  return out
 }
 
 /** Left-to-right layered layout. Pure: same graph in, same positions out. */

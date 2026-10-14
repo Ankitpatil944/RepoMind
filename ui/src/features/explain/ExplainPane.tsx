@@ -22,8 +22,10 @@ interface Props {
   node: FlowNode | null
   ask: AskState | null
   explain: ExplainState | null
+  aiStatus?: 'ready' | 'unreachable' | 'error' | null
   onExplain: (chunkId: number) => void
   onCite: (s: Source) => void
+  onShowSummary?: () => void
 }
 
 const LLM_HELP = (
@@ -33,12 +35,28 @@ const LLM_HELP = (
   </>
 )
 
-export function ExplainPane({ node, ask, explain, onExplain, onCite }: Props) {
-  const chunkId = node?.chunk_id ?? null
+export function ExplainPane({ node, ask, explain, aiStatus, onExplain, onCite, onShowSummary }: Props) {
+  const chunkId = node?.chunk_id ?? node?.handler_chunk_id ?? null
   const showExplain = explain && explain.chunkId === chunkId
+  const aiOff = !!aiStatus && aiStatus !== 'ready'
 
   return (
     <div className="h-full overflow-auto p-4">
+      {aiOff && (
+        <div role="note" className="mb-4 rounded-lg border border-border-control bg-bg-2 p-3 text-[13px] text-text-1">
+          <p className="font-medium">AI is off, and that is fine for understanding the code.</p>
+          <p className="mt-1 text-text-2">
+            The <strong>Summary</strong> tab describes any function, file or folder from static analysis:
+            signature, docs, complexity, callers and callees. To also get written explanations, connect a
+            model (see <strong>Enable /ask</strong> in the README).
+          </p>
+          {onShowSummary && (
+            <button type="button" onClick={onShowSummary} className="link-btn -ml-1.5 mt-2">
+              Open Summary
+            </button>
+          )}
+        </div>
+      )}
       {ask && (
         <section aria-label="Answer to your question" className="mb-6">
           <h3 className="mb-2 text-[12px] font-medium uppercase tracking-wide text-text-3">Your question</h3>

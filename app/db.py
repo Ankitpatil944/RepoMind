@@ -80,6 +80,13 @@ CREATE TABLE IF NOT EXISTS endpoints (
 CREATE INDEX IF NOT EXISTS call_edges_caller_idx ON call_edges (caller_chunk_id);
 CREATE INDEX IF NOT EXISTS call_edges_callee_idx ON call_edges (repo_id, callee_name);
 CREATE INDEX IF NOT EXISTS endpoints_repo_idx ON endpoints (repo_id);
+-- Milestone 5: facts shown in the UI without any LLM. Backfilled by re-analysis.
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS signature TEXT NOT NULL DEFAULT '';
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS doc TEXT NOT NULL DEFAULT '';
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS complexity INT NOT NULL DEFAULT 0;
+ALTER TABLE chunks ADD COLUMN IF NOT EXISTS loc INT NOT NULL DEFAULT 0;
+ALTER TABLE files ADD COLUMN IF NOT EXISTS loc INT NOT NULL DEFAULT 0;
+
 CREATE INDEX IF NOT EXISTS chunks_repo_idx ON chunks (repo_id);
 CREATE INDEX IF NOT EXISTS chunks_tsv_idx ON chunks USING gin (search_tsv);
 CREATE INDEX IF NOT EXISTS chunks_embedding_idx
@@ -100,7 +107,7 @@ def connect() -> psycopg.Connection:
 
 # Bump when the static analyzer's output changes, so indexes built by an older
 # analyzer are re-analyzed (without re-parsing) on the next ingest.
-ANALYSIS_VERSION = "2"
+ANALYSIS_VERSION = "4"
 
 
 def init_schema(conn: psycopg.Connection) -> None:

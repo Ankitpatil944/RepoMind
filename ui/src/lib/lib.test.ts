@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { FileEntry, FlowGraph } from '../api/types'
 import { citationRef, linkCitations } from './citations'
-import { buildOutline, layoutFlow, pathEdgeIds } from './graph'
+import { buildOutline, layoutFlow, neighbourhood, pathEdgeIds } from './graph'
 import { buildHash, DEFAULT_STATE, parseHash } from './hash'
+import { layoutTreemap } from './treemap'
 import { ancestors, buildFileTree, flattenVisible } from './tree'
 
 describe('url state', () => {
@@ -21,9 +22,19 @@ describe('url state', () => {
       depth: 4,
       dir: 'both' as const,
       outline: true,
+      view: 'architecture' as const,
+      arch: 'app/routes',
     }
 
     expect(parseHash(buildHash(state))).toEqual(state)
+  })
+
+  it('defaults to the overview view and summary tab', () => {
+    expect(DEFAULT_STATE.view).toBe('overview')
+    expect(DEFAULT_STATE.tab).toBe('summary')
+    expect(parseHash('').view).toBe('overview')
+    expect(parseHash('#view=nope').view).toBe('overview')
+    expect(parseHash('#arch=%2F%2Fapp%2F%2F').arch).toBe('app')
   })
 
   it('omits defaults so urls stay short', () => {
@@ -36,7 +47,7 @@ describe('url state', () => {
 
     expect(s.repo).toBeNull()
     expect(s.depth).toBe(4)
-    expect(s.tab).toBe('source')
+    expect(s.tab).toBe('summary') // falls back to the default tab
     expect(s.dir).toBe('down')
     expect(s.start).toBeNull()
   })
@@ -44,10 +55,10 @@ describe('url state', () => {
 
 describe('file tree', () => {
   const files: FileEntry[] = [
-    { path: 'app/routes/auth.py', language: 'python', symbols: 5, endpoints: 5 },
-    { path: 'app/security.py', language: 'python', symbols: 6, endpoints: 0 },
-    { path: 'webhooks/server.js', language: 'javascript', symbols: 3, endpoints: 2 },
-    { path: 'main.py', language: 'python', symbols: 1, endpoints: 1 },
+    { path: 'app/routes/auth.py', language: 'python', symbols: 5, endpoints: 5, loc: 50, complexity: 9 },
+    { path: 'app/security.py', language: 'python', symbols: 6, endpoints: 0, loc: 60, complexity: 8 },
+    { path: 'webhooks/server.js', language: 'javascript', symbols: 3, endpoints: 2, loc: 30, complexity: 4 },
+    { path: 'main.py', language: 'python', symbols: 1, endpoints: 1, loc: 12, complexity: 1 },
   ]
 
   it('nests directories first and rolls up counts', () => {
@@ -134,6 +145,62 @@ describe('graph helpers', () => {
     ])
     const count = (o: typeof outline): number => 1 + o.children.reduce((n, c) => n + count(c), 0)
     expect(count(outline)).toBe(FLOW.nodes.length)
+  })
+})
+
+describe('treemap', () => {
+  it('fills the area exactly with rectangles proportional to value', () => {
+    const items = [
+      { id: 'a', value: 60 },
+      { id: 'b', value: 25 },
+      { id: 'c', value: 10 },
+      { id: 'd', value: 5 },
+    ]
+
+    const rects = layoutTreemap(items, 100, 50)
+
+    expect(rects).toHaveLength(4)
+    const area = (r: { w: number; h: number }) => r.w * r.h
+    expect(rects.reduce((a, r) => a + area(r), 0)).toBeCloseTo(5000, 3)
+    const a = rects.find((r) => r.id === 'a')!
+    expect(area(a) / 5000).toBeCloseTo(0.6, 3)
+    for (const r of rects) {
+      expect(r.x).toBeGreaterThanOrEqual(-1e-9)
+      expect(r.y).toBeGreaterThanOrEqual(-1e-9)
+      expect(r.x + r.w).toBeLessThanOrEqual(100 + 1e-9)
+      expect(r.y + r.h).toBeLessThanOrEqual(50 + 1e-9)
+    }
+  })
+
+  it('does not overlap and ignores empty items', () => {
+    const rects = layoutTreemap(
+      [
+        { id: 'x', value: 10 },
+        { id: 'y', value: 10 },
+        { id: 'z', value: 0 },
+      ],
+      40,
+      20,
+    )
+
+    expect(rects.map((r) => r.id).sort()).toEqual(['x', 'y'])
+    const [p, q] = rects
+    const overlap = p.x < q.x + q.w - 1e-9 && q.x < p.x + p.w - 1e-9 && p.y < q.y + q.h - 1e-9 && q.y < p.y + p.h - 1e-9
+    expect(overlap).toBe(false)
+  })
+
+  it('returns nothing for degenerate input', () => {
+    expect(layoutTreemap([], 10, 10)).toEqual([])
+    expect(layoutTreemap([{ id: 'a', value: 1 }], 0, 10)).toEqual([])
+  })
+})
+
+describe('graph focus', () => {
+  it('neighbourhood is the node plus direct neighbours only', () => {
+    const n = neighbourhood(FLOW, 'c:10')
+
+    expect([...n].sort()).toEqual(['c:10', 'c:11', 'c:12', 'e:1'])
+    expect(neighbourhood(FLOW, null).size).toBe(0)
   })
 })
 

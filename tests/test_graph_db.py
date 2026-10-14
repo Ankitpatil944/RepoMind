@@ -68,7 +68,8 @@ def test_function_graph_resolves_calls_both_ways(api_repo):
 
     assert [d["name"] for d in g["definitions"]] == ["get_current_user"]
     assert {c["callee"]: c["resolved_name"] for c in g["calls"]}["decode_token"] == "decode_token"
-    assert {c["function"] for c in g["called_by"]} == {"build_report"}  # `me` uses Depends(), not a call
+    # build_report calls it; `me` depends on it via Depends(get_current_user)
+    assert {c["function"] for c in g["called_by"]} == {"build_report", "me"}
 
 
 def test_reingest_backfills_analysis_for_old_files(conn, api_repo):

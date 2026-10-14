@@ -3,13 +3,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type {
   AskResponse,
+  Capabilities,
+  ChunkFacts,
   Direction,
   Endpoint,
   ExplainResponse,
   FileContent,
   FileEntry,
+  FileInfo,
   FlowGraph,
   IngestResult,
+  ModuleGraph,
+  Overview,
   Repo,
   SymbolHit,
 } from './types'
@@ -108,5 +113,55 @@ export function useIngest() {
     onSuccess: () => {
       void qc.invalidateQueries()
     },
+  })
+}
+
+export function useOverview(repo: number | null) {
+  return useQuery({
+    queryKey: ['overview', repo],
+    queryFn: ({ signal }) => api.get<Overview>(`/repos/${repo}/overview`, undefined, signal),
+    enabled: repo !== null,
+    staleTime: STALE,
+  })
+}
+
+export function useModules(repo: number | null, root: string, level: 'dir' | 'file') {
+  return useQuery({
+    queryKey: ['modules', repo, root, level],
+    queryFn: ({ signal }) =>
+      api.get<ModuleGraph>(`/repos/${repo}/graph/modules`, { root, level }, signal),
+    enabled: repo !== null,
+    staleTime: STALE,
+    placeholderData: (prev) => prev,
+  })
+}
+
+export function useFacts(repo: number | null, chunkId: number | null) {
+  return useQuery({
+    queryKey: ['facts', repo, chunkId],
+    queryFn: ({ signal }) =>
+      api.get<ChunkFacts>(`/repos/${repo}/chunks/${chunkId}/facts`, undefined, signal),
+    enabled: repo !== null && chunkId !== null,
+    staleTime: STALE,
+    retry: false,
+  })
+}
+
+export function useFileInfo(repo: number | null, path: string | null) {
+  return useQuery({
+    queryKey: ['fileinfo', repo, path],
+    queryFn: ({ signal }) => api.get<FileInfo>(`/repos/${repo}/files/info`, { path }, signal),
+    enabled: repo !== null && path !== null,
+    staleTime: STALE,
+    retry: false,
+  })
+}
+
+export function useCapabilities() {
+  return useQuery({
+    queryKey: ['capabilities'],
+    queryFn: ({ signal }) => api.get<Capabilities>('/capabilities', undefined, signal),
+    staleTime: 60_000,
+    retry: false,
   })
 }

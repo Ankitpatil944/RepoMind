@@ -14,6 +14,8 @@ export interface FileEntry {
   language: string
   symbols: number
   endpoints: number
+  loc: number
+  complexity: number
 }
 
 export interface SymbolInfo {
@@ -63,6 +65,7 @@ export interface FlowNode {
   end_line?: number
   chunk_id?: number
   endpoint_id?: number
+  handler_chunk_id?: number | null
   method?: string
   path?: string
   handles_authentication?: boolean
@@ -70,6 +73,12 @@ export interface FlowNode {
   evidence?: string[]
   auth_related?: boolean
   hidden_calls?: number
+  signature?: string
+  doc?: string
+  complexity?: number
+  loc?: number
+  fan_in?: number
+  fan_out?: number
 }
 
 export interface FlowEdge {
@@ -120,4 +129,133 @@ export interface IngestResult {
   files_unchanged: number
   files_removed: number
   chunks: number
+}
+
+export interface HotFunction {
+  chunk_id: number
+  name: string
+  file: string
+  line: number
+  complexity: number
+  loc: number
+  doc: string
+  fan_in?: number
+  label?: string
+}
+
+export interface Overview {
+  totals: {
+    files: number
+    loc: number
+    functions: number
+    classes: number
+    endpoints: number
+    internal_links: number
+  }
+  languages: Array<{ language: string; files: number; loc: number }>
+  auth: { authentication: number; protected: number; public: number }
+  hotspots: {
+    most_called: HotFunction[]
+    most_complex: HotFunction[]
+    largest_files: Array<{ path: string; loc: number; language: string }>
+  }
+  guards: HotFunction[]
+  dependencies: {
+    third_party: Array<{ name: string; files: number }>
+    stdlib: Array<{ name: string; files: number }>
+  }
+  frameworks: string[]
+}
+
+export interface ModuleNode {
+  id: string
+  kind: 'dir' | 'file'
+  label: string
+  path: string
+  files: number
+  loc: number
+  endpoints: number
+  complexity: number
+  symbols: number
+  languages: string[]
+  degree: number
+}
+
+export interface ModuleEdge {
+  id: string
+  source: string
+  target: string
+  weight: number
+}
+
+export interface ModuleGraph {
+  root: string
+  level: 'dir' | 'file'
+  nodes: ModuleNode[]
+  edges: ModuleEdge[]
+  truncated: boolean
+  breadcrumb: string[]
+}
+
+export interface ChunkRef {
+  chunk_id: number
+  name: string
+  file: string
+  line: number
+}
+
+export interface ChunkFacts {
+  chunk_id: number
+  name: string
+  qualified_name: string
+  kind: string
+  file: string
+  language: string
+  start_line: number
+  end_line: number
+  signature: string
+  doc: string
+  complexity: number
+  complexity_label: 'low' | 'moderate' | 'high' | null
+  loc: number
+  callees_internal: ChunkRef[]
+  callees_external: string[]
+  callers: ChunkRef[]
+  endpoints: Array<{
+    id: number
+    method: string
+    path: string
+    handles_authentication: boolean
+    requires_auth: boolean
+    evidence: string[]
+  }>
+  summary: string[]
+}
+
+export interface FileInfo {
+  path: string
+  language: string
+  loc: number
+  doc: string
+  symbols: Array<{
+    chunk_id: number
+    kind: string
+    name: string
+    start_line: number
+    end_line: number
+    signature: string
+    doc: string
+    complexity: number
+    loc: number
+    fan_in: number
+  }>
+  imports: { internal: string[]; third_party: string[]; stdlib: string[] }
+  imported_by: string[]
+  endpoints: Array<{ method: string; path: string; line: number }>
+}
+
+export interface Capabilities {
+  llm: { status: 'ready' | 'unreachable' | 'error'; base_url: string; model: string }
+  embedder: string
+  reranker: string
 }

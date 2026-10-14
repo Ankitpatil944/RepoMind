@@ -1,4 +1,4 @@
-import { FolderPlus, Search } from 'lucide-react'
+import { FolderPlus, Search, Sparkles } from 'lucide-react'
 
 import type { Repo } from '../api/types'
 import { Kbd } from '../design/primitives'
@@ -6,6 +6,8 @@ import { Kbd } from '../design/primitives'
 interface Props {
   repos: Repo[]
   repo: Repo | null
+  /** null while unknown */
+  ai: 'ready' | 'unreachable' | 'error' | null
   onRepo: (id: number) => void
   onPalette: () => void
   onIndex: () => void
@@ -16,20 +18,22 @@ function Mark() {
     <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden>
       <rect width="32" height="32" rx="8" fill="var(--bg-2)" stroke="var(--border-control)" />
       <path d="M12 15.5l8-5M12 16.5l8 5" stroke="var(--text-2)" strokeWidth="1.5" />
-      <circle cx="9" cy="16" r="3" fill="var(--accent-500)" />
+      <circle cx="9" cy="16" r="3" fill="var(--accent-500)">
+        <animate attributeName="r" values="3;4;3" dur="2.4s" repeatCount="indefinite" />
+      </circle>
       <circle cx="23" cy="9.5" r="3" fill="var(--text-2)" />
       <circle cx="23" cy="22.5" r="3" fill="var(--text-2)" />
     </svg>
   )
 }
 
-export function Header({ repos, repo, onRepo, onPalette, onIndex }: Props) {
+export function Header({ repos, repo, ai, onRepo, onPalette, onIndex }: Props) {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border-subtle bg-bg-1 px-3">
       <div className="flex items-center gap-2">
         <Mark />
-        <span className="text-[15px] font-semibold tracking-tight">RepoMind</span>
+        <span className="wordmark text-[15px] font-semibold tracking-tight">RepoMind</span>
       </div>
 
       {repos.length > 0 && (
@@ -63,6 +67,21 @@ export function Header({ repos, repo, onRepo, onPalette, onIndex }: Props) {
         {repo && (
           <span title={repo.path}>
             {repo.files} files · {repo.chunks} chunks
+          </span>
+        )}
+        {ai !== null && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border border-border-control px-2 py-0.5 text-[12px]"
+            title={
+              ai === 'ready'
+                ? 'A language model is reachable: written answers and explanations are available.'
+                : 'No language model is reachable. Everything structural still works: overview, architecture, call flow, summaries and search.'
+            }
+          >
+            <Sparkles size={12} className={ai === 'ready' ? 'text-ok' : 'text-text-3'} aria-hidden />
+            <span className={ai === 'ready' ? 'text-text-1' : 'text-text-2'}>
+              {ai === 'ready' ? 'AI on' : 'AI off'}
+            </span>
           </span>
         )}
         <button
