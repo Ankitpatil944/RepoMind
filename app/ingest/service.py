@@ -11,6 +11,15 @@ from app.text import embedding_text, search_text
 
 EMBED_BATCH = 64
 
+# Method names so common that `anything.<name>()` almost never means *our* method.
+COMMON_METHOD_NAMES = frozenset(
+    """get set add update pop append extend remove clear copy keys values items close open read write
+    send put delete commit rollback flush execute fetchone fetchall join split strip format encode
+    decode lower upper run start stop load dump dumps loads post patch head refresh count index find
+    sort reverse insert exit enter next map filter reduce push shift then catch emit on off call
+    apply connect disconnect save create init reset parse validate render""".split()
+)
+
 
 def embed_pending(conn: psycopg.Connection, repo_id: int, embedder: Embedder) -> int:
     """Embed every chunk of the repo that has no embedding yet (new files, and
@@ -133,17 +142,32 @@ def _store_analysis(
 def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
     """Link call edges / endpoint handlers to chunk ids by name, preferring the
     same file. Re-run on every ingest since another file may now define a name."""
+    # Name matching is a guess, so it is deliberately conservative:
+    #   foo()        -> a plain function (a bare call can never be a method)
+    #   self.foo()   -> a method in the same file
+    #   obj.foo()    -> a function/method, unless `foo` is a ubiquitous name
+    #                   (get, add, close, ...) that would match unrelated objects
     conn.execute(
         """
         UPDATE call_edges e SET callee_chunk_id = (
             SELECT c.id FROM chunks c
-            WHERE c.repo_id = e.repo_id AND c.kind IN ('function', 'method')
-              AND c.name = e.callee_name
+            WHERE c.repo_id = e.repo_id AND c.name = e.callee_name
+              AND CASE
+                    WHEN position('.' in e.callee_full) = 0 THEN c.kind = 'function'
+                    -- exactly one dot: `self.foo`, not `self.cache.foo`
+                    WHEN (left(e.callee_full, 5) = 'self.'
+                          OR left(e.callee_full, 4) = 'cls.'
+                          OR left(e.callee_full, 5) = 'this.')
+                         AND length(e.callee_full) - length(replace(e.callee_full, '.', '')) = 1
+                      THEN c.kind = 'method' AND c.file_id = e.file_id
+                    ELSE c.kind IN ('function', 'method')
+                         AND e.callee_name <> ALL(%s)
+                  END
             ORDER BY (c.file_id = e.file_id) DESC, c.id
             LIMIT 1)
         WHERE e.repo_id = %s
         """,
-        (repo_id,),
+        (list(COMMON_METHOD_NAMES), repo_id),
     )
     conn.execute(
         """

@@ -26,6 +26,7 @@ import { Explorer } from '../features/explorer/Explorer'
 import { Outline } from '../features/graph/Outline'
 import { CommandPalette } from '../features/palette/CommandPalette'
 import { SummaryPane } from '../features/summary/SummaryPane'
+import { ExportDialog } from '../features/export/ExportDialog'
 import { Header } from './Header'
 import { IndexDialog } from './IndexDialog'
 import { usePanelWidth } from './usePanelWidth'
@@ -72,6 +73,7 @@ export default function App() {
   const [pane, setPane] = useState<Pane>('graph')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [indexOpen, setIndexOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [archSel, setArchSel] = useState<ModuleNode | null>(null)
   const askInput = useRef<HTMLInputElement>(null)
   const [explorerOpen, setExplorerOpen] = useState(true)
@@ -299,6 +301,7 @@ export default function App() {
         }}
         onPalette={() => setPaletteOpen(true)}
         onIndex={() => setIndexOpen(true)}
+        onExport={() => setExportOpen(true)}
       />
 
       {repoList.length === 0 ? (
@@ -631,6 +634,12 @@ export default function App() {
         onSymbol={selectSymbol}
         onFile={openFile}
         onAsk={doAsk}
+      />
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        repoId={repoId}
+        repoName={repo?.name ?? 'repo'}
       />
       <IndexDialog
         open={indexOpen}

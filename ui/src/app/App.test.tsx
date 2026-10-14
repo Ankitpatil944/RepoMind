@@ -178,6 +178,7 @@ const FILE = {
 let calls: Array<{ url: string; method: string; body?: string }>
 let llmStatus: 'ready' | 'unreachable' = 'unreachable'
 let dominantFolder = false
+let endpointsOverride: Endpoint[] | null = null
 
 function route(url: string, init?: RequestInit): unknown {
   const u = new URL(url, 'http://test')
@@ -196,7 +197,24 @@ function route(url: string, init?: RequestInit): unknown {
     return { llm: { status: llmStatus, base_url: 'http://x/v1', model: 'm' }, embedder: 'hashing', reranker: 'none' }
   }
   if (p === '/repos') return REPOS
-  if (p === '/repos/1/endpoints') return ENDPOINTS
+  if (p === '/repos/1/endpoints') return endpointsOverride ?? ENDPOINTS
+  if (p === '/repos/1/export/estimate') {
+    return { full_source_tokens: 120000, overview_tokens: 900, map_tokens: 12000, source_tokens: 30000, chars_per_token: 4 }
+  }
+  if (p === '/repos/1/export') {
+    return {
+      format: u.searchParams.get('format'),
+      detail: u.searchParams.get('detail'),
+      content: '# shop_api: codebase map\n\n## Overview\n- 13 files | 289 lines\n',
+      estimated_tokens: 1500,
+      budget: Number(u.searchParams.get('max_tokens')),
+      over_budget: false,
+      truncated: u.searchParams.get('detail') === 'source',
+      omitted: { endpoints: 0, files: 4, symbols: 0, source: 0 },
+      files_included: 9,
+      test_files_left_out: 2,
+    }
+  }
   if (p === '/repos/1/overview') return OVERVIEW
   if (p === '/repos/1/files') {
     return [
@@ -237,6 +255,7 @@ beforeEach(() => {
   calls = []
   llmStatus = 'unreachable'
   dominantFolder = false
+  endpointsOverride = null
   window.location.hash = ''
   vi.stubGlobal(
     'fetch',
@@ -485,6 +504,155 @@ describe('AI-optional behaviour', () => {
 
     expect(await screen.findByText(/connection refused/)).toBeTruthy()
     expect(screen.getAllByText(/Enable \/ask/).length).toBeGreaterThan(0)
+  })
+})
+
+function manyEndpoints(): Endpoint[] {
+  const out: Endpoint[] = []
+  let id = 1000
+  for (const svc of ['svc-a', 'svc-b', 'svc-c']) {
+    for (const file of ['routers/users.py', 'routers/orders.py']) {
+      for (let i = 0; i < 10; i++) {
+        out.push(
+          ep({
+            id: id++,
+            method: 'GET',
+            path: `/${svc}/${file.split('/')[1].replace('.py', '')}/${i}`,
+            file: `services/${svc}/app/${file}`,
+            line: i + 1,
+            handler: `h${id}`,
+          }),
+        )
+      }
+    }
+  }
+  return out
+}
+
+describe('Collapsible endpoints', () => {
+  it('starts collapsed on a large repo and expands level by level', async () => {
+    endpointsOverride = manyEndpoints() // 60 endpoints, above the auto-collapse threshold
+    renderApp()
+    const explorer = await screen.findByRole('complementary', { name: 'Explorer' })
+
+    const groupA = await within(explorer).findByRole('button', { name: /services\/svc-a/ })
+    expect(groupA.getAttribute('aria-expanded')).toBe('false')
+    expect(within(explorer).queryByText('/svc-a/users/0')).toBeNull()
+    expect(within(explorer).getByText('60 endpoints')).toBeTruthy()
+
+    fireEvent.click(groupA)
+    const file = await within(explorer).findByRole('button', { name: /routers\/users\.py/ })
+    expect(file.getAttribute('aria-expanded')).toBe('false')
+
+    fireEvent.click(file)
+    expect(await within(explorer).findByText('/svc-a/users/0')).toBeTruthy()
+    expect(within(explorer).queryByText('/svc-b/users/0')).toBeNull() // other services stay closed
+  })
+
+  it('Expand all and Collapse all work, and filtering shows every match', async () => {
+    endpointsOverride = manyEndpoints()
+    renderApp()
+    const explorer = await screen.findByRole('complementary', { name: 'Explorer' })
+    await within(explorer).findByRole('button', { name: /services\/svc-a/ })
+
+    fireEvent.click(within(explorer).getByRole('button', { name: 'Expand all' }))
+    expect(await within(explorer).findByText('/svc-c/orders/9')).toBeTruthy()
+
+    fireEvent.click(within(explorer).getByRole('button', { name: 'Collapse all' }))
+    await waitFor(() => expect(within(explorer).queryByText('/svc-c/orders/9')).toBeNull())
+
+    // searching must not hide results behind collapsed groups
+    fireEvent.change(within(explorer).getByPlaceholderText('Filter endpoints'), {
+      target: { value: 'svc-b/orders/3' },
+    })
+    expect(await within(explorer).findByText('/svc-b/orders/3')).toBeTruthy()
+    expect(within(explorer).getByText('1 of 60 endpoints')).toBeTruthy()
+  })
+
+  it('small repos start fully expanded', async () => {
+    renderApp()
+    const explorer = await screen.findByRole('complementary', { name: 'Explorer' })
+
+    expect(await within(explorer).findByText('/auth/login')).toBeTruthy()
+    expect(within(explorer).getByText('/orders')).toBeTruthy()
+  })
+
+  it('reveals the selected endpoint when picked from elsewhere', async () => {
+    endpointsOverride = manyEndpoints()
+    renderApp()
+    const explorer = await screen.findByRole('complementary', { name: 'Explorer' })
+    await within(explorer).findByRole('button', { name: /services\/svc-b/ })
+
+    window.location.hash = '#repo=1&view=flow&ep=1025&sel=e%3A1025'
+
+    // ids run 1000.. in file order, so 1025 is /svc-b/users/5 (inside a closed group)
+    expect(await within(explorer).findByText('/svc-b/users/5')).toBeTruthy()
+  })
+})
+
+describe('Export for an LLM', () => {
+  it('shows what each level costs against pasting the source', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'shop_api' })
+
+    fireEvent.click(screen.getByRole('button', { name: /^Export$/ }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Export for an LLM' })
+    const cost = await within(dialog).findByRole('region', { name: 'Cost comparison' })
+    expect(within(cost).getByText('~120,000')).toBeTruthy() // raw source
+    expect(within(cost).getByText(/~900/)).toBeTruthy() // overview
+    expect(within(cost).getByText(/12,000/)).toBeTruthy() // map
+    // the default request: repo map, 16k budget, markdown
+    await waitFor(() =>
+      expect(
+        calls.some((c) => c.url === '/repos/1/export?detail=map&max_tokens=16000&format=markdown'),
+      ).toBe(true),
+    )
+  })
+
+  it('re-requests when options change and reports trimming', async () => {
+    renderApp()
+    await screen.findByRole('heading', { name: 'shop_api' })
+    fireEvent.click(screen.getByRole('button', { name: /^Export$/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Export for an LLM' })
+
+    fireEvent.click(within(dialog).getByRole('radio', { name: /Map \+ key source/ }))
+    fireEvent.change(within(dialog).getByLabelText('Token budget'), { target: { value: '8000' } })
+    fireEvent.change(within(dialog).getByLabelText('Format'), { target: { value: 'json' } })
+
+    await waitFor(() =>
+      expect(
+        calls.some((c) => c.url === '/repos/1/export?detail=source&max_tokens=8000&format=json'),
+      ).toBe(true),
+    )
+    expect(await within(dialog).findByText(/trimmed:/)).toBeTruthy()
+    expect(within(dialog).getByText(/4 files left out/)).toBeTruthy()
+    expect(within(dialog).getByText(/2 test files excluded/)).toBeTruthy()
+  })
+
+  it('copies the export and downloads it as a file', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const createObjectURL = vi.fn(() => 'blob:fake')
+    const revoke = vi.fn()
+    Object.assign(URL, { createObjectURL, revokeObjectURL: revoke })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    renderApp()
+    await screen.findByRole('heading', { name: 'shop_api' })
+    fireEvent.click(screen.getByRole('button', { name: /^Export$/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Export for an LLM' })
+    await within(dialog).findByText(/~1,500/)
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Copy to clipboard/ }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# shop_api: codebase map')))
+    expect(await within(dialog).findByText('Copied')).toBeTruthy()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Download \.md/ }))
+    expect(createObjectURL).toHaveBeenCalled()
+    expect(click).toHaveBeenCalled()
+    expect(revoke).toHaveBeenCalledWith('blob:fake')
+    click.mockRestore()
   })
 })
 

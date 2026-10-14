@@ -8,6 +8,10 @@ import type {
   Direction,
   Endpoint,
   ExplainResponse,
+  ExportDetail,
+  ExportEstimate,
+  ExportFormat,
+  ExportResult,
   FileContent,
   FileEntry,
   FileInfo,
@@ -163,5 +167,34 @@ export function useCapabilities() {
     queryFn: ({ signal }) => api.get<Capabilities>('/capabilities', undefined, signal),
     staleTime: 60_000,
     retry: false,
+  })
+}
+
+export function useExportEstimate(repo: number | null) {
+  return useQuery({
+    queryKey: ['export-estimate', repo],
+    queryFn: ({ signal }) => api.get<ExportEstimate>(`/repos/${repo}/export/estimate`, undefined, signal),
+    enabled: repo !== null,
+    staleTime: 60_000,
+    retry: false,
+  })
+}
+
+export function useExport(
+  repo: number | null,
+  opts: { detail: ExportDetail; maxTokens: number; format: ExportFormat },
+) {
+  return useQuery({
+    queryKey: ['export', repo, opts.detail, opts.maxTokens, opts.format],
+    queryFn: ({ signal }) =>
+      api.get<ExportResult>(
+        `/repos/${repo}/export`,
+        { detail: opts.detail, max_tokens: opts.maxTokens, format: opts.format },
+        signal,
+      ),
+    enabled: repo !== null,
+    staleTime: 60_000,
+    retry: false,
+    placeholderData: (prev) => prev,
   })
 }

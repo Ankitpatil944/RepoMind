@@ -1,4 +1,4 @@
-import { FolderPlus, Search, Sparkles } from 'lucide-react'
+import { Download, FolderPlus, Search, Sparkles } from 'lucide-react'
 
 import type { Repo } from '../api/types'
 import { Kbd } from '../design/primitives'
@@ -11,6 +11,7 @@ interface Props {
   onRepo: (id: number) => void
   onPalette: () => void
   onIndex: () => void
+  onExport: () => void
 }
 
 function Mark() {
@@ -27,7 +28,7 @@ function Mark() {
   )
 }
 
-export function Header({ repos, repo, ai, onRepo, onPalette, onIndex }: Props) {
+export function Header({ repos, repo, ai, onRepo, onPalette, onIndex, onExport }: Props) {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border-subtle bg-bg-1 px-3">
@@ -83,6 +84,17 @@ export function Header({ repos, repo, ai, onRepo, onPalette, onIndex }: Props) {
               {ai === 'ready' ? 'AI on' : 'AI off'}
             </span>
           </span>
+        )}
+        {repo && (
+          <button
+            type="button"
+            onClick={onExport}
+            title="Export a token-budgeted summary to use as LLM context"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-control px-2.5 text-[13px] text-text-1 transition-colors duration-150 hover:bg-bg-3"
+          >
+            <Download size={14} aria-hidden />
+            Export
+          </button>
         )}
         <button
           type="button"

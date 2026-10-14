@@ -103,6 +103,12 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
     s = sub.add_parser("endpoints", help="list HTTP endpoints with auth classification")
     s.add_argument("repo")
     s.add_argument("--auth", choices=["authentication", "protected", "public"])
+    s = sub.add_parser("export", help="token-budgeted repo context to paste into an LLM")
+    s.add_argument("repo")
+    s.add_argument("--detail", choices=["overview", "map", "source"], default="map")
+    s.add_argument("--max-tokens", type=int, default=30_000)
+    s.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    s.add_argument("-o", "--output", help="write to a file instead of stdout")
 
     args = p.parse_args(argv)
     c = client or _client()
@@ -127,6 +133,24 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
                 r = c.post("/search", json={"repo_id": repo_id, "query": args.text, "top_k": args.k})
             _raise(r)
             print(format_ask(r.json()) if args.cmd == "ask" else format_search(r.json()))
+        elif args.cmd == "export":
+            repo_id = resolve_repo(c, args.repo)
+            r = c.get(
+                f"/repos/{repo_id}/export",
+                params={"detail": args.detail, "max_tokens": args.max_tokens, "format": args.format},
+            )
+            _raise(r)
+            d = r.json()
+            note = f"~{d['estimated_tokens']:,} tokens (budget {d['budget']:,}, {d['detail']}, {d['format']})"
+            if d["truncated"]:
+                note += "; trimmed to fit"
+            if args.output:
+                with open(args.output, "w", encoding="utf-8") as fh:
+                    fh.write(d["content"])
+                print(f"Wrote {args.output}: {note}", file=sys.stderr)
+            else:
+                print(d["content"])
+                print(note, file=sys.stderr)
         elif args.cmd == "endpoints":
             repo_id = resolve_repo(c, args.repo)
             r = c.get(f"/repos/{repo_id}/endpoints", params={"auth": args.auth} if args.auth else None)

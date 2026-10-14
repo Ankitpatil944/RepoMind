@@ -139,10 +139,41 @@ given by name or by id.
 | `search <repo> "<query>"` | Ranked code locations, no LLM needed |
 | `ask <repo> "<question>"` | Answer with `[n]` citations (needs an LLM) |
 | `endpoints <repo> [--auth authentication\|protected\|public]` | HTTP routes with auth classification |
+| `export <repo> [--detail overview\|map\|source] [--max-tokens N] [--format markdown\|json] [-o file]` | Token-budgeted context for an LLM |
 
 The same features are available over HTTP (`/ingest`, `/search`, `/ask`,
 `/repos/{id}/endpoints`, `/repos/{id}/graph?name=fn`, `/repos/{id}/chunks`); see
 <http://localhost:8000/docs>.
+
+## Use it as context for your own LLM (and keep the bill small)
+
+The embeddings in the database are a **search index**, not something a model can read: an LLM
+consumes text tokens, so you cannot hand it vectors. Most of what RepoMind stores is not vectors
+at all but structured facts (signatures, docs, routes, call edges, imports). **Export** turns
+those facts into compact text with a token budget:
+
+```bash
+# CLI (Markdown to a file; add --format json for compact JSON)
+docker compose exec api python -m app.cli export my-project --detail map --max-tokens 16000 -o map.md
+```
+
+or use **Export** in the web UI header, which shows what each level costs before you copy it.
+
+| Level | What's in it | Typical size |
+|---|---|---|
+| `overview` | Size, stack, architecture, auth surface, guards, hotspots | about 1k tokens |
+| `map` (default) | Overview + every route with its auth role + signatures and docs of the most important files | up to your budget |
+| `source` | The map, plus code for handlers, hubs and guards | up to your budget |
+
+On a real 88,000-line, 549-file FastAPI monorepo, pasting the source is roughly **1,000,000
+tokens**; the overview is **under 1,000**, and a budgeted map fits in 8,000 to 30,000. Files are
+ranked (routes first, then how depended-upon they are, then size) and the least important are left
+out *with a note saying what was dropped*. Test files are excluded.
+
+Notes: token counts are estimates (about 4 characters per token; real tokenizers vary by model).
+The export is generated from static analysis, so it contains no model output and is deterministic.
+It is plain ASCII, so it pastes cleanly anywhere. For *targeted* questions, pairing the overview with
+retrieval (`search`) is cheaper than any large dump.
 
 ## How it works
 

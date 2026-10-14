@@ -213,6 +213,9 @@ def _fan_in(conn: psycopg.Connection, repo_id: int) -> dict[int, int]:
     return {cid: n for cid, n in rows}
 
 
+fan_in_by_chunk = _fan_in  # public name for other modules (export)
+
+
 def repo_overview(conn: psycopg.Connection, repo_id: int) -> dict:
     files = conn.execute(
         "SELECT id, path, language, loc FROM files WHERE repo_id = %s ORDER BY path", (repo_id,)

@@ -88,11 +88,33 @@ const ROLE_FILTERS: Array<{ value: Role | 'all'; label: string }> = [
   { value: 'public', label: 'Public' },
 ]
 
+/** Folder part of a path, at most two segments deep:
+ *  services/auth-service/app/x.py -> services/auth-service ; app/main.py -> app */
+export function endpointGroup(file: string): string {
+  const parts = file.split('/')
+  if (parts.length <= 1) return '(root)'
+  return parts.slice(0, Math.min(2, parts.length - 1)).join('/')
+}
+
+/** Above this many endpoints the list starts collapsed. */
+const AUTO_COLLAPSE_ABOVE = 40
+
+function CountBadge({ n }: { n: number }) {
+  return (
+    <span className="shrink-0 rounded-full bg-bg-3 px-1.5 font-mono text-[11px] text-text-2">{n}</span>
+  )
+}
+
 function EndpointList({ repo, activeEndpoint, onSelectEndpoint }: Props) {
   const { data, isLoading, error } = useEndpoints(repo)
   const [q, setQ] = useState('')
   const [role, setRole] = useState<Role | 'all'>('all')
   const deferred = useDeferredValue(q)
+  const [open, setOpen] = useState<Set<string>>(new Set())
+  const seededFor = useRef<number | null>(null)
+
+  // While searching or filtering, show every match; collapsing would hide results.
+  const filtering = deferred.trim() !== '' || role !== 'all'
 
   const groups = useMemo(() => {
     const needle = deferred.trim().toLowerCase()
@@ -101,10 +123,57 @@ function EndpointList({ repo, activeEndpoint, onSelectEndpoint }: Props) {
         (role === 'all' || roleOf(e) === role) &&
         (!needle || `${e.method} ${e.path} ${e.handler ?? ''} ${e.file}`.toLowerCase().includes(needle)),
     )
-    const byFile = new Map<string, Endpoint[]>()
-    for (const e of rows) byFile.set(e.file, [...(byFile.get(e.file) ?? []), e])
-    return [...byFile.entries()]
+    const byGroup = new Map<string, Map<string, Endpoint[]>>()
+    for (const e of rows) {
+      const g = endpointGroup(e.file)
+      const files = byGroup.get(g) ?? new Map<string, Endpoint[]>()
+      files.set(e.file, [...(files.get(e.file) ?? []), e])
+      byGroup.set(g, files)
+    }
+    return [...byGroup.entries()]
   }, [data, deferred, role])
+
+  // Seed once per repo: small repos open everything; big ones open only the
+  // place you are, so hundreds of routes don't bury the list.
+  useEffect(() => {
+    if (!data || seededFor.current === repo) return
+    seededFor.current = repo
+    const keys = new Set<string>()
+    const all = data.length <= AUTO_COLLAPSE_ABOVE
+    for (const e of data) {
+      if (all || e.id === activeEndpoint) {
+        keys.add(`g:${endpointGroup(e.file)}`)
+        keys.add(`f:${e.file}`)
+      }
+    }
+    setOpen(keys)
+  }, [data, repo, activeEndpoint])
+
+  // Selecting something elsewhere (palette, overview) reveals it in the list.
+  useEffect(() => {
+    const e = data?.find((x) => x.id === activeEndpoint)
+    if (!e) return
+    setOpen((prev) => {
+      const next = new Set(prev)
+      next.add(`g:${endpointGroup(e.file)}`)
+      next.add(`f:${e.file}`)
+      return next
+    })
+  }, [activeEndpoint, data])
+
+  const isOpen = (key: string) => filtering || open.has(key)
+  const toggle = (key: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  const expandAll = () =>
+    setOpen(new Set((data ?? []).flatMap((e) => [`g:${endpointGroup(e.file)}`, `f:${e.file}`])))
+  const collapseAll = () => setOpen(new Set())
+
+  const shown = groups.reduce((n, [, files]) => n + [...files.values()].reduce((m, l) => m + l.length, 0), 0)
 
   return (
     <div className="flex h-full flex-col">
@@ -127,6 +196,23 @@ function EndpointList({ repo, activeEndpoint, onSelectEndpoint }: Props) {
           </button>
         ))}
       </div>
+      {data && data.length > 0 && (
+        <div className="flex items-center gap-1 px-3 pb-1 text-[12px] text-text-2">
+          <span>
+            {filtering ? `${shown} of ${data.length}` : data.length} endpoints
+          </span>
+          {!filtering && (
+            <>
+              <button type="button" onClick={expandAll} className="link-btn ml-auto">
+                Expand all
+              </button>
+              <button type="button" onClick={collapseAll} className="link-btn">
+                Collapse all
+              </button>
+            </>
+          )}
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-auto pb-3">
         {isLoading && <div className="p-4"><Spinner label="Loading endpoints" /></div>}
         {error && <div className="p-3"><ErrorNote>{error.message}</ErrorNote></div>}
@@ -137,34 +223,73 @@ function EndpointList({ repo, activeEndpoint, onSelectEndpoint }: Props) {
               : 'RepoMind found no FastAPI, Flask or Express routes in this project.'}
           </EmptyState>
         )}
-        {groups.map(([file, eps]) => (
-          <section key={file} aria-label={file} className="mt-1">
-            <h3 className="truncate px-3 py-1 font-mono text-[11.5px] text-text-3" title={file}>
-              {file}
-            </h3>
-            <ul>
-              {eps.map((e) => (
-                <li key={e.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectEndpoint(e)}
-                    aria-current={e.id === activeEndpoint ? 'true' : undefined}
-                    className={cx(
-                      'flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-bg-3',
-                      e.id === activeEndpoint && 'bg-bg-3 shadow-[inset_2px_0_0_var(--accent-500)]',
-                    )}
-                  >
-                    <MethodPill method={e.method} />
-                    <span className="min-w-0 flex-1 truncate font-mono text-[12.5px]" title={e.path}>
-                      {e.path}
-                    </span>
-                    <RoleBadge role={roleOf(e)} compact />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        {groups.map(([group, files]) => {
+          const total = [...files.values()].reduce((n, l) => n + l.length, 0)
+          const groupOpen = isOpen(`g:${group}`)
+          return (
+            <section key={group} aria-label={group} className="border-b border-border-subtle/60">
+              <h3 className="m-0">
+                <button
+                  type="button"
+                  aria-expanded={groupOpen}
+                  onClick={() => toggle(`g:${group}`)}
+                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-bg-3"
+                >
+                  {groupOpen ? <ChevronDown size={14} aria-hidden /> : <ChevronRight size={14} aria-hidden />}
+                  <Folder size={13} className="shrink-0 text-text-2" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] font-medium" title={group}>
+                    {group}
+                  </span>
+                  <CountBadge n={total} />
+                </button>
+              </h3>
+              {groupOpen &&
+                [...files.entries()].map(([file, eps]) => {
+                  const fileOpen = isOpen(`f:${file}`)
+                  const rel = group === '(root)' ? file : file.slice(group.length + 1)
+                  return (
+                    <div key={file}>
+                      <button
+                        type="button"
+                        aria-expanded={fileOpen}
+                        onClick={() => toggle(`f:${file}`)}
+                        className="flex w-full items-center gap-1.5 py-1 pl-7 pr-3 text-left transition-colors duration-150 hover:bg-bg-3"
+                      >
+                        {fileOpen ? <ChevronDown size={12} aria-hidden /> : <ChevronRight size={12} aria-hidden />}
+                        <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-text-2" title={file}>
+                          {rel}
+                        </span>
+                        <CountBadge n={eps.length} />
+                      </button>
+                      {fileOpen && (
+                        <ul>
+                          {eps.map((e) => (
+                            <li key={e.id}>
+                              <button
+                                type="button"
+                                onClick={() => onSelectEndpoint(e)}
+                                aria-current={e.id === activeEndpoint ? 'true' : undefined}
+                                className={cx(
+                                  'flex w-full items-center gap-2 py-1.5 pl-9 pr-3 text-left transition-colors duration-150 hover:bg-bg-3',
+                                  e.id === activeEndpoint && 'bg-bg-3 shadow-[inset_2px_0_0_var(--accent-500)]',
+                                )}
+                              >
+                                <MethodPill method={e.method} />
+                                <span className="min-w-0 flex-1 truncate font-mono text-[12.5px]" title={e.path}>
+                                  {e.path}
+                                </span>
+                                <RoleBadge role={roleOf(e)} compact />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )
+                })}
+            </section>
+          )
+        })}
       </div>
     </div>
   )

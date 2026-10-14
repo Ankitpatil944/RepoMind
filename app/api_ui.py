@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from app import db, llm
 from app.ask import build_explain_messages, citation
+from app.export import build_export, export_estimates
 from app.graph import FlowTargetNotFound, call_flow, list_endpoints
 from app.ingest.walker import MAX_FILE_BYTES
 from app.insights import chunk_facts, file_info, module_graph, repo_overview
@@ -106,6 +107,30 @@ def chunk_facts_route(repo_id: int, chunk_id: int) -> dict:
     if facts is None:
         raise HTTPException(404, f"chunk {chunk_id} not found")
     return facts
+
+
+@router.get("/repos/{repo_id}/export")
+def export_repo(
+    repo_id: int, detail: str = "map", max_tokens: int = 30_000, format: str = "markdown"
+) -> dict:
+    """A compact, token-budgeted text export of the repo to use as LLM context.
+
+    detail: overview (a few k tokens) | map (routes + signatures) | source (map + key code).
+    The budget is respected by dropping the least important material and saying so."""
+    with db.connect() as conn:
+        _require_repo(conn, repo_id)
+        try:
+            return build_export(conn, repo_id, detail=detail, max_tokens=max_tokens, fmt=format)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+
+
+@router.get("/repos/{repo_id}/export/estimate")
+def export_estimate(repo_id: int) -> dict:
+    """Estimated tokens for each export level vs. pasting the raw source."""
+    with db.connect() as conn:
+        _require_repo(conn, repo_id)
+        return export_estimates(conn, repo_id)
 
 
 @router.get("/repos/{repo_id}/files/info")

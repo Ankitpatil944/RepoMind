@@ -259,3 +259,27 @@ export interface Capabilities {
   embedder: string
   reranker: string
 }
+
+export type ExportDetail = 'overview' | 'map' | 'source'
+export type ExportFormat = 'markdown' | 'json'
+
+export interface ExportResult {
+  format: ExportFormat
+  detail: ExportDetail
+  content: string
+  estimated_tokens: number
+  budget: number
+  over_budget: boolean
+  truncated: boolean
+  omitted: { endpoints: number; files: number; symbols: number; source: number }
+  files_included: number
+  test_files_left_out: number
+}
+
+export interface ExportEstimate {
+  full_source_tokens: number
+  overview_tokens: number
+  map_tokens: number
+  source_tokens: number
+  chars_per_token: number
+}
