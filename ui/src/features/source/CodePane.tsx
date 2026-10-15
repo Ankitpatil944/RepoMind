@@ -71,7 +71,8 @@ const highlight = syntaxHighlighting(
 )
 
 function languageExtension(language: string): Extension {
-  return language === 'python' ? python() : javascript({ jsx: true })
+  if (language === 'python') return python()
+  return javascript({ jsx: true, typescript: language === 'typescript' })
 }
 
 interface Props {

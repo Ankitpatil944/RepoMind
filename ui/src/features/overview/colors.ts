@@ -2,6 +2,7 @@
 const LANG_COLOR: Record<string, string> = {
   python: 'var(--syn-function)',
   javascript: 'var(--syn-number)',
+  typescript: 'var(--syn-type)',
 }
 
 const LANG_NAME: Record<string, string> = {

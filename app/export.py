@@ -469,7 +469,7 @@ def _markdown(plan: _Plan, detail: str, budget: _Budget, bodies: list[dict]) -> 
     if detail == "source" and bodies:
         optional("## Key source\n")
         for b in bodies:
-            fence = "python" if b["language"] == "python" else "javascript"
+            fence = b["language"] if b["language"] in ("python", "typescript") else "javascript"
             block = f"### {b['path']}:{b['line']} `{b['name']}`\n```{fence}\n{b['code']}\n```\n"
             if not optional(block):
                 omitted["source"] += 1

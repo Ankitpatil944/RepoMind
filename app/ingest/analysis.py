@@ -3,6 +3,7 @@
 Heuristic and name-based on purpose (no type resolution). Supported:
   Python     Flask / FastAPI style decorators, FastAPI `Depends(...)`
   JavaScript Express-style `app.get(path, ...middleware, handler)` and `router.use(...)`
+  TypeScript the same, plus NestJS `@Controller` / `@Get` / `@UseGuards` decorators
 """
 
 import ast
@@ -11,7 +12,7 @@ from dataclasses import dataclass, field
 
 from tree_sitter import Node
 
-from app.ingest.parser import parse_tree
+from app.ingest.parser import JS_FAMILY, parse_tree
 
 # Callee names that suggest authentication / authorization work. Written with
 # only constructs common to Python `re` and Postgres `~*` so one pattern is
@@ -392,10 +393,109 @@ def _analyze_javascript(root: Node) -> Analysis:
     return result
 
 
+# ------------------------------------------------------------------- NestJS
+
+_NEST_VERBS = {
+    "Get": "GET", "Post": "POST", "Put": "PUT", "Delete": "DELETE",
+    "Patch": "PATCH", "Head": "HEAD", "Options": "OPTIONS", "All": "ALL",
+}
+
+
+def _decorator(node: Node) -> tuple[str, Node | None] | None:
+    """(`UseGuards`, arguments node) for `@UseGuards(...)`; (`Public`, None) for `@Public`."""
+    expr = next((c for c in node.named_children if c.type != "comment"), None)
+    if expr is None:
+        return None
+    if expr.type == "call_expression":
+        fn = expr.child_by_field_name("function")
+        if fn is not None and fn.type in _JS_NAMEABLE:
+            return _txt(fn).rsplit(".", 1)[-1], expr.child_by_field_name("arguments")
+        return None
+    if expr.type in _JS_NAMEABLE:
+        return _txt(expr).rsplit(".", 1)[-1], None
+    return None
+
+
+def _nest_args(args: Node | None) -> list[Node]:
+    return [a for a in (args.named_children if args else []) if a.type != "comment"]
+
+
+def _nest_join(prefix: str, path: str) -> str:
+    parts = [p.strip("/") for p in (prefix, path) if p and p.strip("/")]
+    return "/" + "/".join(parts)
+
+
+def _analyze_nest(root: Node, result: Analysis) -> None:
+    for cls in _walk(root):
+        if cls.type not in ("class_declaration", "abstract_class_declaration"):
+            continue
+        decorators = [c for c in cls.children if c.type == "decorator"]
+        if cls.parent is not None and cls.parent.type == "export_statement":
+            decorators += [c for c in cls.parent.children if c.type == "decorator"]
+        prefix, class_signals, is_controller = "", [], False
+        for d in decorators:
+            parsed = _decorator(d)
+            if parsed is None:
+                continue
+            name, args = parsed
+            if name == "Controller":
+                is_controller = True
+                first = next(iter(_nest_args(args)), None)
+                prefix = _js_string(first) or ""
+            else:
+                class_signals.append(name)
+                class_signals.extend(_js_names(_nest_args(args)))
+        if not is_controller:
+            continue
+
+        body = cls.child_by_field_name("body")
+        pending: list[Node] = []
+        for child in body.children if body is not None else []:
+            if child.type == "decorator":
+                pending.append(child)
+                continue
+            if child.type != "method_definition":
+                pending = []
+                continue
+            name_node = child.child_by_field_name("name")
+            verbs, signals, line = [], list(class_signals), None
+            for d in pending:
+                parsed = _decorator(d)
+                if parsed is None:
+                    continue
+                dec_name, args = parsed
+                line = line or d.start_point.row + 1
+                if dec_name in _NEST_VERBS:
+                    first = next(iter(_nest_args(args)), None)
+                    verbs.append((_NEST_VERBS[dec_name], _js_string(first) or ""))
+                else:
+                    signals.append(dec_name)
+                    signals.extend(_js_names(_nest_args(args)))
+            pending = []
+            if name_node is None:
+                continue
+            for method, path in verbs:
+                result.endpoints.append(
+                    RawEndpoint(
+                        method=method,
+                        path=_nest_join(prefix, path),
+                        framework="nestjs",
+                        line=line or child.start_point.row + 1,
+                        handler_name=_txt(name_node),
+                        handler_line=child.start_point.row + 1,
+                        signals=tuple(_dedupe(signals)),
+                        inline_calls=(),
+                    )
+                )
+
+
 def analyze_source(source: bytes, language: str) -> Analysis:
     root = parse_tree(source, language)
     if language == "python":
         return _analyze_python(root)
-    if language == "javascript":
-        return _analyze_javascript(root)
+    if language in JS_FAMILY:
+        result = _analyze_javascript(root)
+        if language == "typescript":
+            _analyze_nest(root, result)
+        return result
     return Analysis()

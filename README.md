@@ -2,7 +2,7 @@
 
 **Ask questions about any codebase and get answers that point to the exact file and line.**
 
-RepoMind indexes a Python or JavaScript project, then lets you ask things like
+RepoMind indexes a Python, JavaScript or TypeScript project, then lets you ask things like
 *"how do users log in?"* or *"which endpoints require authentication?"*. Answers cite
 real source locations, and the whole thing runs locally and free.
 
@@ -218,7 +218,7 @@ flowchart LR
 |---|---|
 | API | FastAPI |
 | Storage + vector + keyword search | PostgreSQL with pgvector and full-text search |
-| Parsing | tree-sitter (Python, JavaScript) |
+| Parsing | tree-sitter (Python, JavaScript, TypeScript) |
 | Embeddings / reranker | [fastembed](https://github.com/qdrant/fastembed) (`bge-small-en-v1.5`, MiniLM cross-encoder), local ONNX, no GPU |
 | LLM | any OpenAI-compatible endpoint (optional) |
 
@@ -226,7 +226,7 @@ flowchart LR
 
 | | Supported |
 |---|---|
-| Languages | Python, JavaScript (`.py .js .jsx .mjs .cjs`) |
+| Languages | Python, JavaScript, TypeScript (`.py .js .jsx .mjs .cjs .ts .tsx .mts .cts`) |
 | Route detection | FastAPI / Flask decorators, `APIRouter(prefix=...)`, `Depends(...)`, Express `app.get/post/...` and `router.use(...)` |
 | Not supported yet | TypeScript, Go, Java, etc.; Django URL confs; routers mounted across files with a prefix; docs/Markdown/config files are not indexed |
 
@@ -337,7 +337,10 @@ Also done: background indexing with live progress in the UI (`POST /ingest/jobs`
 (`docker compose exec api python -m app.cli ingest https://github.com/owner/repo`, or `POST /ingest {"url": ...}`;
 https only, shallow clone, hosts limited by `GIT_HOSTS`).
 
-Planned: TypeScript and more frameworks, cross-file router prefixes, larger benchmark,
+Also done: TypeScript / TSX parsing, Express routes in TypeScript, and NestJS controllers
+(`@Controller`, `@Get`/`@Post`..., class- and method-level `@UseGuards`).
+
+Planned: more frameworks (Fastify, Koa, Django, Spring), cross-file router prefixes, larger benchmark,
 LLM-judged faithfulness, streaming answers.
 
 ## Contributing

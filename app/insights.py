@@ -19,14 +19,17 @@ _NODE_BUILTINS = frozenset(
     "worker_threads zlib".split()
 )
 _STDLIB = frozenset(getattr(sys, "stdlib_module_names", ())) | {"__future__"}
-_JS_EXTS = ("", ".js", ".jsx", ".mjs", ".cjs", "/index.js", "/index.jsx", "/index.mjs")
+_JS_EXTS = (
+    "", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts",
+    "/index.ts", "/index.tsx", "/index.js", "/index.jsx", "/index.mjs",
+)
 
 
 def external_name(module: str, language: str) -> str | None:
     """Top-level package of an import, or None for relative imports."""
     if module.startswith("."):
         return None
-    if language == "javascript":
+    if language in ("javascript", "typescript"):
         module = module.removeprefix("node:")
         parts = module.split("/")
         return "/".join(parts[:2]) if module.startswith("@") and len(parts) > 1 else parts[0]
@@ -34,7 +37,7 @@ def external_name(module: str, language: str) -> str | None:
 
 
 def is_stdlib(name: str, language: str, raw: str = "") -> bool:
-    if language == "javascript":
+    if language in ("javascript", "typescript"):
         return raw.startswith("node:") or name in _NODE_BUILTINS
     return name in _STDLIB
 
@@ -63,7 +66,7 @@ class ImportResolver:
 
     def resolve(self, importer: str, module: str, language: str) -> str | None:
         here = posixpath.dirname(importer)
-        if language == "javascript":
+        if language in ("javascript", "typescript"):
             if not module.startswith("."):
                 return None
             target = posixpath.normpath(posixpath.join(here, module))

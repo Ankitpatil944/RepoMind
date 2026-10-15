@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 import tree_sitter_javascript as tsjs
 import tree_sitter_python as tspython
+import tree_sitter_typescript as tsts
 from tree_sitter import Language, Node, Parser
 
 EXTENSIONS = {
@@ -16,14 +17,24 @@ EXTENSIONS = {
     ".jsx": "javascript",
     ".mjs": "javascript",
     ".cjs": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".mts": "typescript",
+    ".cts": "typescript",
 }
+
+# Languages that share the JavaScript grammar family (same node types for our purposes).
+JS_FAMILY = frozenset({"javascript", "typescript"})
 
 _PARSERS = {
     "python": Parser(Language(tspython.language())),
     "javascript": Parser(Language(tsjs.language())),
+    "typescript": Parser(Language(tsts.language_typescript())),
 }
+# `.tsx` needs the JSX-aware grammar; used when plain TypeScript parsing hits errors.
+_TSX_PARSER = Parser(Language(tsts.language_tsx()))
 
-_CLASS_NODES = {"class_definition", "class_declaration"}
+_CLASS_NODES = {"class_definition", "class_declaration", "abstract_class_declaration"}
 _FUNC_NODES = {
     "function_definition",
     "function_declaration",
@@ -57,6 +68,7 @@ _DECISIONS = {
         "ternary_expression",
     },
 }
+_DECISIONS["typescript"] = _DECISIONS["javascript"]
 _JS_LOGICAL = {"&&", "||", "??"}
 
 MAX_SIGNATURE = 200
@@ -206,7 +218,7 @@ def _complexity(node: Node, language: str) -> int:
         n = stack.pop()
         if n.type in decisions:
             count += 1
-        elif language == "javascript" and n.type == "binary_expression":
+        elif language in JS_FAMILY and n.type == "binary_expression":
             op = n.child_by_field_name("operator")
             if op is not None and op.type in _JS_LOGICAL:
                 count += 1
@@ -310,7 +322,12 @@ def _module_chunk(
 
 
 def parse_tree(source: bytes, language: str) -> Node:
-    return _PARSERS[language].parse(source).root_node
+    root = _PARSERS[language].parse(source).root_node
+    if language == "typescript" and root.has_error:
+        alt = _TSX_PARSER.parse(source).root_node
+        if not alt.has_error:
+            return alt
+    return root
 
 
 def parse_source(source: bytes, language: str) -> list[Chunk]:
