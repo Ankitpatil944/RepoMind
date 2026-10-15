@@ -11,6 +11,15 @@ real source locations, and the whole thing runs locally and free.
 ![PostgreSQL + pgvector](https://img.shields.io/badge/postgres-pgvector-4169E1)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+![RepoMind overview of the sample project: stats, auth surface and where to start](docs/img/1-overview.png)
+
+<table>
+<tr>
+<td width="50%"><img src="docs/img/flow-nestjs.png" alt="Call flow for POST /auth/login in a NestJS app"><br><sub>Call flow of a NestJS route, with the code-derived summary (no LLM involved).</sub></td>
+<td width="50%"><img src="docs/img/2-architecture.png" alt="Architecture map of folders and their dependencies"><br><sub>Architecture map: folders sized by code, linked by imports.</sub></td>
+</tr>
+</table>
+
 Real output from the bundled sample project:
 
 ```text
@@ -228,7 +237,7 @@ flowchart LR
 |---|---|
 | Languages | Python, JavaScript, TypeScript (`.py .js .jsx .mjs .cjs .ts .tsx .mts .cts`) |
 | Route detection | FastAPI / Flask decorators, `APIRouter(prefix=...)`, `Depends(...)`, Express `app.get/post/...` and `router.use(...)` |
-| Not supported yet | TypeScript, Go, Java, etc.; Django URL confs; routers mounted across files with a prefix; docs/Markdown/config files are not indexed |
+| Not supported yet | Go, Java, etc. (Python, JavaScript and TypeScript are); Django URL confs; routers mounted across files with a prefix; docs/Markdown/config files are not indexed |
 
 **Heuristics, not magic.** Auth classification is based on names and patterns (`login`,
 `Depends(get_current_user)`, `jwt.decode`, ...). "No auth detected" means no signal was
@@ -253,20 +262,25 @@ Everything is optional. Copy `.env.example` to `.env` to change defaults.
 docker compose exec api python -m evals.run --embedder fastembed --reranker fastembed
 ```
 
-The harness indexes a benchmark app (`evals/repos/shop_api`), asks 16 labelled questions,
-and checks retrieval (hit@k, recall, MRR), endpoint detection and auth classification.
-Floors live in `evals/thresholds.json`; CI fails if a metric drops below them.
+The harness indexes three small benchmark apps (FastAPI `shop_api`, NestJS + Express
+`notes_nest`, Flask `inventory_flask`), asks 36 labelled questions, and checks retrieval
+(hit@k, recall, MRR), endpoint detection and auth classification. Floors live in
+`evals/thresholds.json` (per dataset); CI fails if a metric drops below them.
 
-| shop_api benchmark | hit@1 | recall@10 | MRR | endpoint detection | auth classification |
-|---|---|---|---|---|---|
-| hashing (no model) | 0.69 | 0.88 | 0.79 | 1.00 / 1.00 | 0.94 |
-| bge-small + reranker | 1.00 | 1.00 | 1.00 | 1.00 / 1.00 | 0.94 |
+| Benchmark | Config | hit@1 | recall@10 | MRR | endpoint detection (P / R) | auth classification |
+|---|---|---|---|---|---|---|
+| shop_api | hashing (no model) | 0.69 | 0.88 | 0.79 | 1.00 / 1.00 | 1.00 |
+| shop_api | bge-small + reranker | 1.00 | 1.00 | 1.00 | 1.00 / 1.00 | 1.00 |
+| notes_nest | hashing (no model) | 0.20 | 0.75 | 0.40 | 1.00 / 1.00 | 1.00 |
+| notes_nest | bge-small + reranker | 0.60 | 0.85 | 0.73 | 1.00 / 1.00 | 1.00 |
+| inventory_flask | hashing (no model) | 0.70 | 0.70 | 0.70 | 1.00 / 1.00 | 1.00 |
+| inventory_flask | bge-small + reranker | 0.70 | 1.00 | 0.81 | 1.00 / 1.00 | 1.00 |
 
-> **Read this honestly:** the benchmark is small (16 questions, 55 chunks), so the real-model
-> numbers are saturated. They show the pipeline works, not that retrieval is perfect on
-> large repos. Larger, harder datasets are welcome contributions. One endpoint
-> (`POST /webhooks/stripe`, protected by an HMAC signature rather than a user token) is
-> deliberately a known miss.
+> **Read this honestly:** the benchmarks are small (36 questions, ~140 chunks) and I wrote
+> them myself, then fixed the analyzer where they exposed gaps, so the endpoint scores are
+> optimistic. The two newer apps are harder for retrieval (hit@1 0.60 to 0.70 with real
+> models), which is the more realistic picture. Larger, third-party benchmarks are
+> welcome contributions.
 
 ## Security notes
 

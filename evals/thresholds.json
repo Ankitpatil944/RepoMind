@@ -16,19 +16,43 @@
       "notes_nest": {
         "min": {
           "endpoints.auth_f1": 0.95,
-          "endpoints.classification_accuracy": 0.9,
+          "endpoints.classification_accuracy": 0.95,
           "endpoints.detection_precision": 0.95,
           "endpoints.detection_recall": 0.95,
-          "endpoints.requires_auth_f1": 0.9
+          "endpoints.requires_auth_f1": 0.95,
+          "retrieval.hit@1": 0.15,
+          "retrieval.hit@3": 0.55,
+          "retrieval.mrr": 0.35,
+          "retrieval.recall@10": 0.7,
+          "retrieval.recall@5": 0.55
         }
       },
       "inventory_flask": {
         "min": {
           "endpoints.auth_f1": 0.95,
-          "endpoints.classification_accuracy": 0.9,
+          "endpoints.classification_accuracy": 0.95,
           "endpoints.detection_precision": 0.95,
           "endpoints.detection_recall": 0.95,
-          "endpoints.requires_auth_f1": 0.9
+          "endpoints.requires_auth_f1": 0.95,
+          "retrieval.hit@1": 0.65,
+          "retrieval.hit@3": 0.65,
+          "retrieval.mrr": 0.65,
+          "retrieval.recall@10": 0.65,
+          "retrieval.recall@5": 0.65
+        }
+      },
+      "shop_api": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.95,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.95,
+          "retrieval.hit@1": 0.64,
+          "retrieval.hit@3": 0.82,
+          "retrieval.mrr": 0.74,
+          "retrieval.recall@10": 0.82,
+          "retrieval.recall@5": 0.73
         }
       }
     }
@@ -53,7 +77,12 @@
           "endpoints.classification_accuracy": 0.9,
           "endpoints.detection_precision": 0.95,
           "endpoints.detection_recall": 0.95,
-          "endpoints.requires_auth_f1": 0.9
+          "endpoints.requires_auth_f1": 0.9,
+          "retrieval.hit@1": 0.55,
+          "retrieval.hit@3": 0.85,
+          "retrieval.mrr": 0.68,
+          "retrieval.recall@10": 0.8,
+          "retrieval.recall@5": 0.8
         }
       },
       "inventory_flask": {
@@ -62,7 +91,12 @@
           "endpoints.classification_accuracy": 0.9,
           "endpoints.detection_precision": 0.95,
           "endpoints.detection_recall": 0.95,
-          "endpoints.requires_auth_f1": 0.9
+          "endpoints.requires_auth_f1": 0.9,
+          "retrieval.hit@1": 0.65,
+          "retrieval.hit@3": 0.85,
+          "retrieval.mrr": 0.76,
+          "retrieval.recall@10": 0.95,
+          "retrieval.recall@5": 0.85
         }
       }
     }

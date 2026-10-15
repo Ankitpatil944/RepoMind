@@ -245,10 +245,10 @@ def test_overview_summarises_the_repo_without_an_llm(shop):
     assert set(langs) == {"python", "javascript"}
     assert langs["python"]["loc"] > langs["javascript"]["loc"]
 
-    # 5 /auth/* routes; 7 guarded business routes (orders x4, products POST,
-    # admin x2); the HMAC-signed webhook is a known classifier miss -> public.
+    # 5 /auth/* routes; 8 guarded routes (orders x4, products POST, admin x2, and
+    # the HMAC-signed Stripe webhook via its signature-verifying middleware).
     assert o["auth"]["authentication"] == 5
-    assert o["auth"]["protected"] == 7
+    assert o["auth"]["protected"] == 8
     assert sum(o["auth"].values()) == t["endpoints"]
 
     third = {d["name"] for d in o["dependencies"]["third_party"]}
