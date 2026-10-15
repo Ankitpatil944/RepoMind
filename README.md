@@ -337,10 +337,11 @@ Also done: background indexing with live progress in the UI (`POST /ingest/jobs`
 (`docker compose exec api python -m app.cli ingest https://github.com/owner/repo`, or `POST /ingest {"url": ...}`;
 https only, shallow clone, hosts limited by `GIT_HOSTS`).
 
-Also done: TypeScript / TSX parsing, Express routes in TypeScript, and NestJS controllers
+Also done: three benchmark apps in the eval gate (FastAPI, NestJS + Express, Flask) with
+per-dataset floors in `evals/thresholds.json`; TypeScript / TSX parsing, Express routes in TypeScript, and NestJS controllers
 (`@Controller`, `@Get`/`@Post`..., class- and method-level `@UseGuards`).
 
-Planned: more frameworks (Fastify, Koa, Django, Spring), cross-file router prefixes, larger benchmark,
+Planned: more frameworks (Fastify, Koa, Django, Spring), cross-file router prefixes, a benchmark of real third-party repos,
 LLM-judged faithfulness, streaming answers.
 
 ## Contributing

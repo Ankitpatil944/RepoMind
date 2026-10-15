@@ -1,0 +1,72 @@
+{
+  "name": "inventory_flask",
+  "repo": "../repos/inventory_flask",
+  "questions": [
+    {
+      "id": "login-flow",
+      "question": "How does a user log in and receive a token?",
+      "relevant": ["app/auth.py::login", "app/security.py::issue_token"],
+      "must_mention": ["/auth/login"]
+    },
+    {
+      "id": "password-hashing",
+      "question": "How are passwords hashed?",
+      "relevant": ["app/security.py::hash_password"]
+    },
+    {
+      "id": "token-validation",
+      "question": "Where is the bearer token decoded and checked on requests?",
+      "relevant": ["app/security.py::login_required", "app/security.py::decode_token"]
+    },
+    {
+      "id": "admin-only",
+      "question": "How are admin-only routes enforced?",
+      "relevant": ["app/security.py::admin_required"]
+    },
+    {
+      "id": "price-markup",
+      "question": "How is the selling price computed from cost?",
+      "relevant": ["app/services/pricing.py::apply_markup"]
+    },
+    {
+      "id": "low-stock",
+      "question": "How does the app find items that need reordering?",
+      "relevant": ["app/services/stock.py::low_stock", "app/reports.py::low_stock_report"]
+    },
+    {
+      "id": "stock-adjust",
+      "question": "Where is the quantity of an item changed?",
+      "relevant": ["app/services/stock.py::adjust_stock"]
+    },
+    {
+      "id": "inventory-value",
+      "question": "How is the total value of the inventory calculated?",
+      "relevant": ["app/services/stock.py::stock_value"]
+    },
+    {
+      "id": "app-factory",
+      "question": "Where are the blueprints registered with the Flask app?",
+      "relevant": ["app/__init__.py::create_app"]
+    },
+    {
+      "id": "signup",
+      "question": "How does a new account get created?",
+      "relevant": ["app/auth.py::signup"]
+    }
+  ],
+  "endpoints": [
+    {"method": "POST", "path": "/auth/login", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/auth/signup", "handles_authentication": true, "requires_auth": false},
+    {"method": "GET", "path": "/auth/me", "handles_authentication": true, "requires_auth": true},
+    {"method": "POST", "path": "/auth/logout", "handles_authentication": true, "requires_auth": true},
+    {"method": "GET", "path": "/items", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/items/<int:item_id>", "handles_authentication": false, "requires_auth": false},
+    {"method": "POST", "path": "/items", "handles_authentication": false, "requires_auth": true},
+    {"method": "PATCH", "path": "/items/<int:item_id>/stock", "handles_authentication": false, "requires_auth": true},
+    {"method": "DELETE", "path": "/items/<int:item_id>", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/reports/low-stock", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/reports/valuation", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/reports/summary", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/healthz", "handles_authentication": false, "requires_auth": false}
+  ]
+}

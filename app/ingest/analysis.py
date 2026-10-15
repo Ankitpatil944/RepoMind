@@ -118,7 +118,8 @@ def _py_route(call: Node, target: str) -> list[tuple[str, str]] | None:
         return None
     positional, keywords = _py_args(call)
     path = _py_string(positional[0]) if positional else _py_string(keywords.get("path"))
-    if path is None or not path.startswith("/"):
+    # "" is valid under a router prefix (`@bp.route("")` under url_prefix="/items").
+    if path is None or not (path == "" or path.startswith("/")):
         return None
     if attr in ("route", "api_route"):
         node = keywords.get("methods")
@@ -244,7 +245,7 @@ def _analyze_python(root: Node) -> Analysis:
                 obj, _, attr = target.rpartition(".")
                 prefix = prefixes.get(obj, "")
                 routes.extend(
-                    (m, prefix if (prefix and p == "/") else prefix + p, attr, obj)
+                    (m, (prefix if (prefix and p == "/") else prefix + p) or "/", attr, obj)
                     for m, p in found
                 )
             elif target:
@@ -300,6 +301,10 @@ def _js_names(nodes: list[Node]) -> list[str]:
             fn = n.child_by_field_name("function")
             if fn is not None and fn.type in _JS_NAMEABLE:
                 out.append(_txt(fn))
+        elif n.type == "new_expression":  # `new RolesGuard('admin')`
+            ctor = n.child_by_field_name("constructor")
+            if ctor is not None and ctor.type in _JS_NAMEABLE:
+                out.append(_txt(ctor))
     return out
 
 

@@ -11,6 +11,26 @@
       "retrieval.mrr": 0.74,
       "retrieval.recall@10": 0.82,
       "retrieval.recall@5": 0.73
+    },
+    "datasets": {
+      "notes_nest": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.9,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.9
+        }
+      },
+      "inventory_flask": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.9,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.9
+        }
+      }
     }
   },
   "fastembed+fastembed": {
@@ -25,6 +45,26 @@
       "retrieval.mrr": 0.95,
       "retrieval.recall@10": 0.95,
       "retrieval.recall@5": 0.95
+    },
+    "datasets": {
+      "notes_nest": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.9,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.9
+        }
+      },
+      "inventory_flask": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.9,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.9
+        }
+      }
     }
   }
 }

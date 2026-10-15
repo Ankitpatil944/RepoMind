@@ -1,0 +1,80 @@
+{
+  "name": "notes_nest",
+  "repo": "../repos/notes_nest",
+  "questions": [
+    {
+      "id": "login-flow",
+      "question": "How do users log in and get an access token?",
+      "relevant": ["src/auth/auth.controller.ts::AuthController.login", "src/auth/auth.service.ts::AuthService.signToken"],
+      "must_mention": ["/auth/login"]
+    },
+    {
+      "id": "password-check",
+      "question": "Where is the password compared with the stored hash?",
+      "relevant": ["src/auth/auth.service.ts::AuthService.validateUser"]
+    },
+    {
+      "id": "jwt-guard",
+      "question": "How is the bearer token verified on protected routes?",
+      "relevant": ["src/auth/jwt-auth.guard.ts::JwtAuthGuard.canActivate"]
+    },
+    {
+      "id": "admin-delete",
+      "question": "How is deleting a note restricted to admins?",
+      "relevant": ["src/auth/roles.guard.ts::RolesGuard.canActivate", "src/notes/notes.controller.ts::NotesController.remove"]
+    },
+    {
+      "id": "note-search",
+      "question": "How does searching notes by text work?",
+      "relevant": ["src/notes/notes.service.ts::NotesService.search", "src/notes/notes.controller.ts::NotesController.search"]
+    },
+    {
+      "id": "tag-filter",
+      "question": "How are notes filtered by tag?",
+      "relevant": ["src/notes/notes.service.ts::NotesService.findAll"]
+    },
+    {
+      "id": "token-refresh",
+      "question": "How is an access token refreshed?",
+      "relevant": ["src/auth/auth.service.ts::AuthService.refreshToken", "src/auth/auth.controller.ts::AuthController.refresh"]
+    },
+    {
+      "id": "webhook-signature",
+      "question": "How is the email webhook signature checked?",
+      "relevant": ["src/webhooks/server.ts::verifySignature"],
+      "must_mention": ["verifySignature"]
+    },
+    {
+      "id": "public-share",
+      "question": "Which endpoint lets someone view a note without logging in?",
+      "relevant": ["src/share/share.controller.ts::ShareController.view"]
+    },
+    {
+      "id": "register-user",
+      "question": "Where is a new user's password hashed during registration?",
+      "relevant": ["src/auth/auth.service.ts::AuthService.createUser"]
+    }
+  ],
+  "endpoints": [
+    {"method": "POST", "path": "/auth/login", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/auth/register", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/auth/refresh", "handles_authentication": true, "requires_auth": true},
+    {"method": "POST", "path": "/auth/logout", "handles_authentication": true, "requires_auth": true},
+    {"method": "GET", "path": "/notes", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/notes/search", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/notes/:id", "handles_authentication": false, "requires_auth": true},
+    {"method": "POST", "path": "/notes", "handles_authentication": false, "requires_auth": true},
+    {"method": "PUT", "path": "/notes/:id", "handles_authentication": false, "requires_auth": true},
+    {"method": "DELETE", "path": "/notes/:id", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/share/:shareId", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/health", "handles_authentication": false, "requires_auth": false},
+    {
+      "method": "POST",
+      "path": "/webhooks/email",
+      "handles_authentication": false,
+      "requires_auth": true,
+      "note": "caller is authenticated by an HMAC signature middleware, not a user token"
+    },
+    {"method": "GET", "path": "/webhooks/ping", "handles_authentication": false, "requires_auth": false}
+  ]
+}

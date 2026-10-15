@@ -10,7 +10,9 @@ from evals import metrics
 from evals.dataset import load_dataset
 from evals.runner import check_thresholds, flatten, run_eval
 
-DATASET = Path(__file__).parent.parent / "evals" / "datasets" / "shop_api.json"
+DATASETS_DIR = Path(__file__).parent.parent / "evals" / "datasets"
+DATASET = DATASETS_DIR / "shop_api.json"
+ALL_DATASETS = sorted(DATASETS_DIR.glob("*.json"))
 
 
 # ------------------------------------------------------------------ metrics
@@ -75,8 +77,8 @@ def test_check_thresholds():
 # every future eval number.
 
 
-def _repo_facts():
-    ds = load_dataset(DATASET)
+def _repo_facts(path: Path = DATASET):
+    ds = load_dataset(path)
     chunk_ids, endpoints = set(), set()
     for rel, language, path in iter_source_files(ds.repo_path):
         data = path.read_bytes()
@@ -85,16 +87,18 @@ def _repo_facts():
     return ds, chunk_ids, endpoints
 
 
-def test_every_relevant_label_points_at_a_real_chunk():
-    ds, chunk_ids, _ = _repo_facts()
+@pytest.mark.parametrize("path", ALL_DATASETS, ids=lambda p: p.stem)
+def test_every_relevant_label_points_at_a_real_chunk(path):
+    ds, chunk_ids, _ = _repo_facts(path)
 
     unknown = {r for q in ds.questions for r in q.relevant} - chunk_ids
 
     assert unknown == set()
 
 
-def test_labelled_endpoints_match_what_the_analyzer_detects():
-    ds, _, detected = _repo_facts()
+@pytest.mark.parametrize("path", ALL_DATASETS, ids=lambda p: p.stem)
+def test_labelled_endpoints_match_what_the_analyzer_detects(path):
+    ds, _, detected = _repo_facts(path)
 
     expected = {(e["method"], e["path"]) for e in ds.endpoints}
 
@@ -128,3 +132,13 @@ def test_run_eval_end_to_end(conn):
     # run_eval cleans up the repo it indexed
     left = conn.execute("SELECT count(*) FROM repos WHERE path = %s", (str(ds.repo_path),)).fetchone()[0]
     assert left == 0
+
+
+def test_every_dataset_is_covered_by_the_gate():
+    import json
+
+    table = json.loads((DATASETS_DIR.parent / "thresholds.json").read_text())
+    for config, entry in table.items():
+        for path in ALL_DATASETS:
+            name = load_dataset(path).name
+            assert name in entry.get("datasets", {}) or "min" in entry, (config, name)

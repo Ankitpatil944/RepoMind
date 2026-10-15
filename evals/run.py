@@ -65,45 +65,67 @@ def print_report(report: dict, config: str) -> None:
         print(f"  ~ {q['id']}: first relevant at rank {q['first_relevant_rank']}")
 
 
+def limits_for(table: dict, config: str, dataset: str) -> dict | None:
+    """Floors for one dataset: its own entry under `datasets`, else the config default."""
+    entry = table.get(config)
+    if entry is None:
+        return None
+    return entry.get("datasets", {}).get(dataset, entry)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="evals.run")
-    p.add_argument("--dataset", type=Path, default=ROOT / "datasets" / "shop_api.json")
+    p.add_argument(
+        "--dataset",
+        type=Path,
+        action="append",
+        help="dataset JSON (repeatable); default: every file in evals/datasets",
+    )
     p.add_argument("--embedder", choices=["hashing", "fastembed"], default="hashing")
     p.add_argument("--reranker", choices=["none", "fastembed"], default="none")
     p.add_argument("--answers", action="store_true", help="also call the LLM (LLM_BASE_URL/...)")
     p.add_argument("--out", type=Path, help="write the full JSON report here")
     p.add_argument("--thresholds", type=Path, default=ROOT / "thresholds.json")
     p.add_argument("--no-gate", action="store_true", help="report only; never fail")
-    p.add_argument("--write-baseline", action="store_true", help="store current metrics as floors")
+    p.add_argument(
+        "--write-baseline",
+        action="store_true",
+        help="store current metrics as per-dataset floors",
+    )
     p.add_argument("--keep", action="store_true", help="leave the indexed repo in the database")
     args = p.parse_args(argv)
 
     config = f"{args.embedder}+{args.reranker}"
+    paths = args.dataset or sorted((ROOT / "datasets").glob("*.json"))
+    embedder, reranker = _embedder(args.embedder), _reranker(args.reranker)
+
+    reports = []
     with db.connect() as conn:
         db.init_schema(conn)
-        report = run_eval(
-            conn,
-            load_dataset(args.dataset),
-            _embedder(args.embedder),
-            _reranker(args.reranker),
-            answers=args.answers,
-            keep=args.keep,
-        )
-    report["config"] = config
+        for path in paths:
+            report = run_eval(
+                conn, load_dataset(path), embedder, reranker, answers=args.answers, keep=args.keep
+            )
+            report["config"] = config
+            print_report(report, config)
+            reports.append(report)
 
-    print_report(report, config)
     if args.out:
-        args.out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        payload = reports[0] if len(reports) == 1 else {"config": config, "datasets": reports}
+        args.out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
-    flat = flatten(report)
     table = json.loads(args.thresholds.read_text()) if args.thresholds.exists() else {}
 
     if args.write_baseline:
-        table[config] = {
-            "min": {k: max(round(v - TOLERANCE, 2), 0.0) for k, v in sorted(flat.items())}
-        }
+        entry = table.setdefault(config, {})
+        datasets = entry.setdefault("datasets", {})
+        for report in reports:
+            flat = flatten(report)
+            datasets[report["dataset"]] = {
+                "min": {k: max(round(v - TOLERANCE, 2), 0.0) for k, v in sorted(flat.items())}
+            }
         args.thresholds.write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
-        print(f"\nwrote baseline for '{config}' to {args.thresholds}")
+        print(f"\nwrote baseline for '{config}' ({len(reports)} datasets) to {args.thresholds}")
         return 0
 
     if args.no_gate:
@@ -111,14 +133,19 @@ def main(argv: list[str] | None = None) -> int:
     if config not in table:
         print(f"\nno thresholds for '{config}' in {args.thresholds}; not gating")
         return 0
-    failures = check_thresholds(flat, table[config])
-    if failures:
-        print(f"\nREGRESSION ({config}):")
-        for f in failures:
-            print(f"  FAIL {f}")
-        return 1
-    print(f"\nOK: all {len(table[config].get('min', {}))} floors met for '{config}'")
-    return 0
+
+    failed = False
+    for report in reports:
+        limits = limits_for(table, config, report["dataset"])
+        failures = check_thresholds(flatten(report), limits)
+        if failures:
+            failed = True
+            print(f"\nREGRESSION {report['dataset']} ({config}):")
+            for f in failures:
+                print(f"  FAIL {f}")
+        else:
+            print(f"\nOK {report['dataset']}: all {len(limits.get('min', {}))} floors met for '{config}'")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

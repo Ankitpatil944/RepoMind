@@ -18,7 +18,9 @@ AUTHN_PATH_RE = re.compile(
 GUARD_RE = re.compile(
     r"login_?required|jwt|auth_?required|requires?_?auth|require_?auth|authenticat|"
     r"authoriz|permission|roles?_?required|current_?user|verify_?token|protect|"
-    r"guard|passport|bearer|oauth2|security|is_?admin|require_?admin",
+    r"guard|passport|bearer|oauth2|security|is_?admin|require_?admin|"
+    r"(admin|staff|superuser|owner|roles?)s?_?required|"
+    r"verify_?\w{0,20}(signature|hmac)|hmac|signature_?(check|required|valid)",
     re.I,
 )
 AUTH_CALL_RE = re.compile(AUTH_CALL_PATTERN, re.I)
