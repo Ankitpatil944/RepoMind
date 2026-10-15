@@ -71,3 +71,11 @@ def test_ingest_bad_url_is_a_400():
     r = c.post("/ingest", json={"url": "https://evil.example.com/o/r"})
     assert r.status_code == 400
     assert "not allowed" in r.json()["detail"]
+
+
+def test_job_endpoint_validates_before_queueing():
+    c = TestClient(main.app)
+    assert c.post("/ingest/jobs", json={}).status_code == 422
+    r = c.post("/ingest/jobs", json={"url": "https://evil.example.com/o/r"})
+    assert r.status_code == 400
+    assert c.get("/jobs/nope").status_code == 404

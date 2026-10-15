@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app import db, gitclone, llm
+from app import db, gitclone, jobs, llm
 from app.api_ui import router as ui_router
 from app.ask import build_messages, citation, is_endpoint_question
 from app.embed import get_embedder
@@ -68,11 +68,23 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/ingest")
-def ingest(req: IngestRequest) -> dict:
+def _check_ingest_request(req: IngestRequest) -> None:
+    """Cheap, synchronous validation shared by /ingest and /ingest/jobs."""
     if bool(req.path) == bool(req.url):
         raise HTTPException(422, "send exactly one of 'path' or 'url'")
+    try:
+        if req.url:
+            gitclone.parse_git_url(req.url)
+        else:
+            _resolve_repo_path(req.path or "")
+    except gitclone.GitError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+def _run_ingest(req: IngestRequest, progress=None) -> dict:
     if req.url:
+        if progress:
+            progress("cloning", 0, 0)
         try:
             path = gitclone.fetch(req.url)
         except gitclone.GitError as e:
@@ -80,7 +92,30 @@ def ingest(req: IngestRequest) -> dict:
     else:
         path = _resolve_repo_path(req.path or "")
     with db.connect() as conn:
-        return ingest_repo(conn, path)
+        return ingest_repo(conn, path, progress=progress)
+
+
+@app.post("/ingest")
+def ingest(req: IngestRequest) -> dict:
+    """Index and wait for the result. Use /ingest/jobs for large projects."""
+    _check_ingest_request(req)
+    return _run_ingest(req)
+
+
+@app.post("/ingest/jobs", status_code=202)
+def start_ingest_job(req: IngestRequest) -> dict:
+    """Start indexing in the background; poll GET /jobs/{id} for progress."""
+    _check_ingest_request(req)
+    job = jobs.submit(req.url or req.path or "", lambda progress: _run_ingest(req, progress))
+    return job.view()
+
+
+@app.get("/jobs/{job_id}")
+def get_job(job_id: str) -> dict:
+    job = jobs.get(job_id)
+    if job is None:
+        raise HTTPException(404, f"job {job_id} not found (jobs are forgotten on restart)")
+    return job.view()
 
 
 @app.post("/search")

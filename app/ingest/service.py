@@ -1,4 +1,5 @@
 import hashlib
+from collections.abc import Callable
 from pathlib import Path
 
 import psycopg
@@ -186,9 +187,15 @@ def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
 
 
 def ingest_repo(
-    conn: psycopg.Connection, root: Path, embedder: Embedder | None = None
+    conn: psycopg.Connection,
+    root: Path,
+    embedder: Embedder | None = None,
+    progress: Callable[[str, int, int], None] | None = None,
 ) -> dict:
-    """Index a local directory. Unchanged files (same sha256) are skipped."""
+    """Index a local directory. Unchanged files (same sha256) are skipped.
+
+    `progress(phase, done, total)` is called as work advances (used by background jobs)."""
+    report = progress or (lambda *_: None)
     root = root.resolve()
     repo_id = conn.execute(
         """
@@ -217,7 +224,9 @@ def ingest_repo(
         "chunks_embedded": 0,
     }
 
-    for rel_path, language, abs_path in iter_source_files(root):
+    files = list(iter_source_files(root))
+    for n, (rel_path, language, abs_path) in enumerate(files):
+        report("parsing", n, len(files))
         seen.add(rel_path)
         data = abs_path.read_bytes()
         sha = hashlib.sha256(data).hexdigest()
@@ -267,8 +276,10 @@ def ingest_repo(
             conn.execute("DELETE FROM files WHERE id = %s", (file_id,))
             stats["files_removed"] += 1
 
+    report("linking", len(files), len(files))
     _resolve_graph(conn, repo_id)
     conn.commit()  # chunks are durable even if embedding fails; re-ingest resumes
+    report("embedding", len(files), len(files))
     stats["chunks_embedded"] = embed_pending(conn, repo_id, embedder or get_embedder())
 
     conn.execute("UPDATE repos SET indexed_at = now() WHERE id = %s", (repo_id,))

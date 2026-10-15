@@ -1,13 +1,28 @@
 import { FolderPlus, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { useIngest } from '../api/hooks'
+import { type IngestProgress, useIngest } from '../api/hooks'
 import { ErrorNote, Spinner } from '../design/primitives'
 
 interface Props {
   open: boolean
   onClose: () => void
   onIndexed: (repoId: number) => void
+}
+
+const PHASES: Record<string, string> = {
+  queued: 'Waiting to start',
+  starting: 'Starting',
+  cloning: 'Cloning repository',
+  parsing: 'Reading files',
+  linking: 'Linking calls',
+  embedding: 'Building the search index (first run may download models)',
+}
+
+function progressLabel(p: IngestProgress | null): string {
+  if (!p) return 'Indexing'
+  const base = PHASES[p.phase] ?? 'Indexing'
+  return p.phase === 'parsing' && p.total > 0 ? `${base}: ${p.done} / ${p.total}` : base
 }
 
 /** Native <dialog>: focus trap, Esc to close and inert background come free. */
@@ -46,8 +61,8 @@ export function IndexDialog({ open, onClose, onIndexed }: Props) {
               Index a project
             </h2>
             <p className="mt-1 text-text-2">
-              Put your code in the <span className="font-mono text-text-1">repos/</span> folder, then enter its
-              folder name. Re-indexing only processes files that changed.
+              Enter a folder name from <span className="font-mono text-text-1">repos/</span>, or paste a public
+              GitHub / GitLab URL. Re-indexing only processes files that changed.
             </p>
           </div>
           <button
@@ -65,17 +80,17 @@ export function IndexDialog({ open, onClose, onIndexed }: Props) {
           onSubmit={(e) => {
             e.preventDefault()
             const v = path.trim()
-            if (v) run(v.startsWith('/') ? v : `/repos/${v}`)
+            if (v) run(v.startsWith('/') || v.startsWith('https://') ? v : `/repos/${v}`)
           }}
         >
           <label className="sr-only" htmlFor="index-path">
-            Folder name
+            Folder name or Git URL
           </label>
           <input
             id="index-path"
             value={path}
             onChange={(e) => setPath(e.target.value)}
-            placeholder="my-project"
+            placeholder="my-project or https://github.com/owner/repo"
             className="h-9 min-w-0 flex-1 rounded-md border border-border-control bg-bg-2 px-3 font-mono text-[13px] placeholder:text-text-3"
           />
           <button
@@ -101,7 +116,7 @@ export function IndexDialog({ open, onClose, onIndexed }: Props) {
         </div>
 
         <div className="mt-3" aria-live="polite">
-          {ingest.isPending && <Spinner label="Indexing — the first run may download models" />}
+          {ingest.isPending && <Spinner label={progressLabel(ingest.progress)} />}
           {ingest.error && <ErrorNote title="Could not index">{ingest.error.message}</ErrorNote>}
         </div>
       </div>

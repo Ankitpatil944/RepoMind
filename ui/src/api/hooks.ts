@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import { api } from './client'
 import type {
@@ -110,14 +111,44 @@ export function useExplain() {
   })
 }
 
+export interface IngestProgress {
+  phase: string
+  done: number
+  total: number
+}
+
+interface JobView extends IngestProgress {
+  id: string
+  status: 'queued' | 'running' | 'done' | 'error'
+  result: IngestResult | null
+  error: string | null
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** Starts a background indexing job and polls it, exposing live progress. */
 export function useIngest() {
   const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (path: string) => api.post<IngestResult>('/ingest', { path }),
+  const [progress, setProgress] = useState<IngestProgress | null>(null)
+  const mutation = useMutation({
+    mutationFn: async (target: string) => {
+      const body = target.startsWith('https://') ? { url: target } : { path: target }
+      setProgress({ phase: 'queued', done: 0, total: 0 })
+      let job = await api.post<JobView>('/ingest/jobs', body)
+      while (job.status === 'queued' || job.status === 'running') {
+        setProgress({ phase: job.phase, done: job.done, total: job.total })
+        await sleep(700)
+        job = await api.get<JobView>(`/jobs/${job.id}`)
+      }
+      if (job.status === 'error' || !job.result) throw new Error(job.error ?? 'Indexing failed')
+      return job.result
+    },
     onSuccess: () => {
       void qc.invalidateQueries()
     },
+    onSettled: () => setProgress(null),
   })
+  return Object.assign(mutation, { progress })
 }
 
 export function useOverview(repo: number | null) {
