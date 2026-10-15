@@ -333,7 +333,11 @@ Done: ingestion, hybrid retrieval + reranking, cited answers, endpoint/auth dete
 call graph, incremental re-indexing, evaluation harness with CI gate, CLI, web UI (overview,
 architecture map, interactive call graph, static summaries).
 
-Planned: TypeScript and more frameworks, cross-file router prefixes, indexing Git URLs directly, larger benchmark, background indexing jobs,
+Also done: indexing a public GitHub/GitLab/Bitbucket repo by URL
+(`docker compose exec api python -m app.cli ingest https://github.com/owner/repo`, or `POST /ingest {"url": ...}`;
+https only, shallow clone, hosts limited by `GIT_HOSTS`).
+
+Planned: TypeScript and more frameworks, cross-file router prefixes, larger benchmark, background indexing jobs,
 LLM-judged faithfulness, streaming answers.
 
 ## Contributing

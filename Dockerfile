@@ -10,6 +10,9 @@ RUN npm run build
 FROM python:3.12-slim
 
 WORKDIR /srv
+# git: lets /ingest clone a public repository from a URL.
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

@@ -21,7 +21,9 @@ services:
     environment:
       DATABASE_URL: postgresql://repomind:repomind@db:5432/repomind
       # Folders the API may index (':'-separated, as seen inside the container).
-      REPOS_ROOT: /repos:/samples
+      REPOS_ROOT: /repos:/samples:/clones
+      # Repositories cloned from a Git URL land here (writable volume).
+      CLONES_DIR: /clones
       FASTEMBED_CACHE_PATH: /models
       EMBEDDER: ${EMBEDDER:-fastembed}
       RERANKER: ${RERANKER:-fastembed}
@@ -37,6 +39,7 @@ services:
       # Bundled sample project for a zero-setup demo.
       - ./evals/repos:/samples:ro
       - models:/models
+      - clones:/clones
     ports:
       # localhost only: the API has no authentication.
       - "127.0.0.1:8000:8000"
@@ -47,3 +50,4 @@ services:
 volumes:
   pgdata:
   models:
+  clones:

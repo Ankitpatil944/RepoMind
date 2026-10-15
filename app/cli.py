@@ -92,7 +92,7 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
     p = argparse.ArgumentParser(prog="repomind", description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("ingest", help="index a folder (path inside the container, e.g. /repos/myproj)")
+    s = sub.add_parser("ingest", help="index a folder (e.g. myproj, or /repos/myproj) or a public https Git URL")
     s.add_argument("path")
     sub.add_parser("repos", help="list indexed repos")
     for name, help_ in (("ask", "ask a question (needs an LLM)"), ("search", "retrieval only, no LLM")):
@@ -115,7 +115,12 @@ def main(argv: list[str] | None = None, client: httpx.Client | None = None) -> i
     c = client or _client()
     try:
         if args.cmd == "ingest":
-            r = c.post("/ingest", json={"path": _ingest_path(args.path)})
+            body = (
+                {"url": args.path}
+                if args.path.startswith("https://")
+                else {"path": _ingest_path(args.path)}
+            )
+            r = c.post("/ingest", json=body)
             _raise(r)
             d = r.json()
             print(

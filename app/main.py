@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app import db, llm
+from app import db, gitclone, llm
 from app.api_ui import router as ui_router
 from app.ask import build_messages, citation, is_endpoint_question
 from app.embed import get_embedder
@@ -29,7 +29,8 @@ app.include_router(ui_router)
 
 
 class IngestRequest(BaseModel):
-    path: str
+    path: str | None = None
+    url: str | None = None  # public https Git URL; cloned shallowly, then indexed
 
 
 class SearchRequest(BaseModel):
@@ -69,7 +70,15 @@ def health() -> dict[str, str]:
 
 @app.post("/ingest")
 def ingest(req: IngestRequest) -> dict:
-    path = _resolve_repo_path(req.path)
+    if bool(req.path) == bool(req.url):
+        raise HTTPException(422, "send exactly one of 'path' or 'url'")
+    if req.url:
+        try:
+            path = gitclone.fetch(req.url)
+        except gitclone.GitError as e:
+            raise HTTPException(400, str(e)) from e
+    else:
+        path = _resolve_repo_path(req.path or "")
     with db.connect() as conn:
         return ingest_repo(conn, path)
 
