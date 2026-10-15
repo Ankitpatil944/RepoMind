@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import psycopg
 
-from app.ingest.analysis import AUTH_CALL_PATTERN
+from app.ingest.analysis import AUTH_CALL_PATTERN, GUARD_PATTERN
 
 # The endpoint exists to perform authentication (login, token issue, ...).
 AUTHN_PATH_RE = re.compile(
@@ -15,14 +15,7 @@ AUTHN_PATH_RE = re.compile(
     re.I,
 )
 # The endpoint is guarded: decorators / middleware / dependencies that enforce auth.
-GUARD_RE = re.compile(
-    r"login_?required|jwt|auth_?required|requires?_?auth|require_?auth|authenticat|"
-    r"authoriz|permission|roles?_?required|current_?user|verify_?token|protect|"
-    r"guard|passport|bearer|oauth2|security|is_?admin|require_?admin|"
-    r"(admin|staff|superuser|owner|roles?)s?_?required|"
-    r"verify_?\w{0,20}(signature|hmac)|hmac|signature_?(check|required|valid)",
-    re.I,
-)
+GUARD_RE = re.compile(GUARD_PATTERN, re.I)
 AUTH_CALL_RE = re.compile(AUTH_CALL_PATTERN, re.I)
 
 MAX_CALL_DEPTH = 3
@@ -51,6 +44,11 @@ def classify(
             evidence.append(f"{label} '{text}' looks like an authentication endpoint")
 
     guards = [s for s in signals if GUARD_RE.search(s)]
+    # Guards declared on the view itself (decorators, DRF permission_classes, mixins)
+    # are stored as pseudo-calls named '@name'.
+    for c in call_names:
+        if c.startswith("@") and GUARD_RE.search(c) and c[1:] not in guards:
+            guards.append(c[1:].split(":", 1)[0])
     for s in guards:
         evidence.append(f"guarded by '{s}'")
 

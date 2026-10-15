@@ -4,9 +4,13 @@ Heuristic and name-based on purpose (no type resolution). Supported:
   Python     Flask / FastAPI style decorators, FastAPI `Depends(...)`
   JavaScript Express-style `app.get(path, ...middleware, handler)` and `router.use(...)`
   TypeScript the same, plus NestJS `@Controller` / `@Get` / `@UseGuards` decorators
+  Fastify    `fastify.get(path, {preHandler}, h)`, `fastify.route({...})`, `addHook`
+  Koa / Hono the Express call shape; `app.route('/x').get(...)` chains
+  Django     `path()` / `re_path()` url confs, DRF `router.register`, view guards
 """
 
 import ast
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 
@@ -20,6 +24,17 @@ from app.ingest.parser import JS_FAMILY, parse_tree
 AUTH_CALL_PATTERN = (
     "(jwt|bcrypt|passlib|argon2|authenticat|authoriz|verify_?token|verify_?password|"
     "check_?password|login_?user|current_?user|decode_?token|oauth|passport)"
+)
+
+# Names that suggest an endpoint is guarded: decorators, middleware, dependencies,
+# DRF permission classes and mixins. Shared by the analyzer and the classifier.
+GUARD_PATTERN = (
+    r"login_?required|jwt|auth_?required|requires?_?auth|require_?auth|authenticat|"
+    r"authoriz|permission|roles?_?required|current_?user|verify_?token|protect|"
+    r"guard|passport|bearer|oauth2|security|is_?admin|require_?admin|"
+    r"(admin|staff|superuser|owner|roles?)s?_?required|"
+    r"verify_?\w{0,20}(signature|hmac)|hmac|signature_?(check|required|valid)"
+    r"|passes_?test|staff_?member_?required|permission_?classes"
 )
 
 
@@ -270,7 +285,197 @@ def _analyze_python(root: Node) -> Analysis:
                     inline_calls=(),
                 )
             )
+    result.endpoints.extend(_analyze_django(root, result.imports))
+    result.calls.extend(_py_guard_markers(root))
     return result
+
+
+# ------------------------------------------------------------------- Django
+
+_DJANGO_URL_FUNCS = {"path", "re_path", "url"}
+_GUARD_RE = re.compile(GUARD_PATTERN, re.I)
+_METHOD_DECORATORS = {"require_POST": "POST", "require_GET": "GET", "require_safe": "GET"}
+_PERMISSION_ATTRS = ("permission_classes", "authentication_classes")
+
+
+def _py_name(node: Node | None) -> str | None:
+    if node is None or node.type not in ("identifier", "attribute"):
+        return None
+    text = _txt(node)
+    return None if "(" in text or "\n" in text else text
+
+
+def _django_route(raw: str, regex: bool) -> str:
+    path = raw
+    if regex:
+        path = re.sub(r"\(\?P<(\w+)>[^)]*\)", r"<\1>", path.lstrip("^").rstrip("$"))
+    return "/" + path.lstrip("/")
+
+
+def _django_handler(node: Node | None) -> tuple[str | None, list[str]]:
+    """(view name, wrapper names) for the second argument of `path()`."""
+    wrappers: list[str] = []
+    while node is not None and node.type == "call":
+        fn = node.child_by_field_name("function")
+        positional, _ = _py_args(node)
+        target = _py_name(fn)
+        if target is None:
+            if fn is not None and fn.type == "call":  # permission_required("x")(view)
+                inner = _py_target(fn)
+                if inner:
+                    wrappers.append(inner.rsplit(".", 1)[-1])
+                node = positional[0] if positional else None
+                continue
+            return None, wrappers
+        last = target.rsplit(".", 1)[-1]
+        if last == "as_view":
+            owner = target.rpartition(".")[0].rsplit(".", 1)[-1]
+            return (owner or None), wrappers
+        if last == "include":
+            return None, wrappers
+        wrappers.append(last)
+        node = positional[0] if positional else None
+    name = _py_name(node)
+    return (name.rsplit(".", 1)[-1] if name else None), wrappers
+
+
+def _analyze_django(root: Node, imports: list[str]) -> list[RawEndpoint]:
+    if not any(i.split(".")[0] in ("django", "rest_framework") for i in imports):
+        return []
+    out: list[RawEndpoint] = []
+
+    # path("api/", include(router.urls)) puts every route of `router` under /api
+    router_prefix: dict[str, str] = {}
+    for n in _walk(root):
+        if n.type != "call":
+            continue
+        target = _py_target(n)
+        positional, _ = _py_args(n)
+        if not target or target.rsplit(".", 1)[-1] not in _DJANGO_URL_FUNCS or len(positional) < 2:
+            continue
+        inc, prefix = positional[1], _py_string(positional[0])
+        if prefix is None or inc.type != "call" or not (_py_target(inc) or "").endswith("include"):
+            continue
+        inc_args, _ = _py_args(inc)
+        owner = _py_name(inc_args[0]) if inc_args else None
+        if owner and owner.endswith(".urls"):
+            router_prefix[owner[: -len(".urls")]] = "/" + prefix.strip("/")
+
+    for n in _walk(root):
+        if n.type != "call":
+            continue
+        target = _py_target(n)
+        if not target:
+            continue
+        last = target.rsplit(".", 1)[-1]
+        positional, _ = _py_args(n)
+        if len(positional) < 2:
+            continue
+        line = n.start_point.row + 1
+        first = _py_string(positional[0])
+        if first is None:
+            continue
+
+        if last in _DJANGO_URL_FUNCS:
+            handler, wrappers = _django_handler(positional[1])
+            if handler is None:
+                continue  # include(...) and dynamic views are out of scope
+            out.append(
+                RawEndpoint(
+                    method="ANY",
+                    path=_django_route(first, last != "path"),
+                    framework="django",
+                    line=line,
+                    handler_name=handler,
+                    handler_line=None,
+                    signals=tuple(_dedupe(wrappers)),
+                    inline_calls=(),
+                )
+            )
+        elif last == "register" and "." in target:  # DRF: router.register("users", UserViewSet)
+            view = _py_name(positional[1])
+            if view is None:
+                continue
+            name = view.rsplit(".", 1)[-1]
+            base = router_prefix.get(target.rpartition(".")[0], "") + "/" + first.strip("/")
+            detail = f"{base}/<pk>"
+            routes = [("GET", base), ("GET", detail)]
+            if "ReadOnly" not in name:
+                routes += [("POST", base), ("PUT", detail), ("PATCH", detail), ("DELETE", detail)]
+            out.extend(
+                RawEndpoint(m, p, "django", line, name, None, (), ()) for m, p in routes
+            )
+    return out
+
+
+def _guard_names(node: Node | None) -> list[str]:
+    """Names inside `[IsAuthenticated, IsAdminUser]` that look like guards."""
+    if node is None:
+        return []
+    items = node.named_children if node.type in ("list", "tuple") else [node]
+    names = [_py_name(i) for i in items]
+    return [x.rsplit(".", 1)[-1] for x in names if x and _GUARD_RE.search(x.rsplit(".", 1)[-1])]
+
+
+def _py_guard_markers(root: Node) -> list[Call]:
+    """Guards declared on a view (decorators, DRF attributes, mixins) as '@name' pseudo-calls.
+
+    They are attached to the view's own chunk, so an endpoint whose handler lives in another
+    file (urls.py -> views.py) still sees them through the handler link."""
+    calls: list[Call] = []
+    for n in _walk(root):
+        line = n.start_point.row + 1
+        if n.type == "decorated_definition":
+            for dec in (c for c in n.children if c.type == "decorator"):
+                expr = next((c for c in dec.named_children if c.type != "comment"), None)
+                if expr is None:
+                    continue
+                if expr.type == "call":
+                    target, args = _py_target(expr), _py_args(expr)[0]
+                else:
+                    target, args = _py_name(expr), []
+                if not target:
+                    continue
+                name = target.rsplit(".", 1)[-1]
+                if name == "method_decorator" and args:  # @method_decorator(login_required)
+                    inner = _py_name(args[0]) or (
+                        _py_target(args[0]) if args[0].type == "call" else None
+                    )
+                    if not inner:
+                        continue
+                    name = inner.rsplit(".", 1)[-1]
+                if name in _PERMISSION_ATTRS:
+                    calls.extend(Call(g, f"@{g}", line) for g in _guard_names(args[0] if args else None))
+                elif name in _METHOD_DECORATORS:
+                    calls.append(Call(name, f"@{name}", line))
+                elif name in ("api_view", "require_http_methods") and args:
+                    node = args[0]
+                    methods = [
+                        s.upper()
+                        for s in (_py_string(c) for c in (node.named_children if node.type in ("list", "tuple") else []))
+                        if s
+                    ]
+                    calls.append(Call(name, f"@{name}:{','.join(methods)}", line))
+                elif _GUARD_RE.search(name):
+                    calls.append(Call(name, f"@{name}", line))
+        elif n.type == "class_definition":
+            supers = n.child_by_field_name("superclasses")
+            for c in supers.named_children if supers is not None else []:
+                full = _py_name(c)
+                last = full.rsplit(".", 1)[-1] if full else None
+                if last and _GUARD_RE.search(last):
+                    calls.append(Call(last, f"@{last}", line))
+                elif last and "ReadOnly" in last:  # DRF read-only viewset: GET routes only
+                    calls.append(Call(last, f"@base:{last}", line))
+            body = n.child_by_field_name("body")
+            for stmt in body.named_children if body is not None else []:
+                assign = stmt.named_children[0] if stmt.type == "expression_statement" and stmt.named_children else None
+                if assign is None or assign.type != "assignment":
+                    continue
+                left, right = assign.child_by_field_name("left"), assign.child_by_field_name("right")
+                if left is not None and _txt(left) in _PERMISSION_ATTRS:
+                    calls.extend(Call(g, f"@{g}", line) for g in _guard_names(right))
+    return calls
 
 
 # ----------------------------------------------------------------- JavaScript
@@ -324,10 +529,78 @@ def _js_calls(root: Node) -> list[Call]:
     return calls
 
 
+_FASTIFY_HOOKS = ("onRequest", "preParsing", "preValidation", "preHandler", "beforeHandler")
+_HOOK_NAMES = {"onRequest", "preParsing", "preValidation", "preHandler"}
+_FUNCS = ("arrow_function", "function_expression", "function")
+
+
+def _js_framework(imports: list[str]) -> str:
+    for module in imports:
+        if module == "fastify" or module.startswith("fastify/"):
+            return "fastify"
+        if module == "koa" or module.startswith("koa-") or module == "@koa/router":
+            return "koa"
+        if module == "hono" or module.startswith("hono/"):
+            return "hono"
+    return "express"
+
+
+def _js_props(obj: Node) -> dict[str, Node]:
+    """`{ method: 'GET', handler }` -> {'method': <string>, 'handler': <identifier>}."""
+    props: dict[str, Node] = {}
+    for c in obj.named_children:
+        if c.type == "pair":
+            key, value = c.child_by_field_name("key"), c.child_by_field_name("value")
+            if key is not None and value is not None:
+                name = _js_string(key) if key.type == "string" else _txt(key)
+                if name:
+                    props[name] = value
+        elif c.type == "shorthand_property_identifier":
+            props[_txt(c)] = c
+    return props
+
+
+def _js_hook_names(props: dict[str, Node]) -> list[str]:
+    out: list[str] = []
+    for key in _FASTIFY_HOOKS:
+        node = props.get(key)
+        if node is not None:
+            out.extend(_js_names([node]))
+    return out
+
+
+def _js_method_list(node: Node | None) -> list[str]:
+    if node is None:
+        return []
+    if node.type == "array":
+        return [m.upper() for m in (_js_string(c) for c in node.named_children) if m]
+    value = _js_string(node)
+    return [value.upper()] if value else []
+
+
+def _js_route_chain(node: Node) -> tuple[str, str] | None:
+    """(object, path) for `x.route('/p').get(a).post(b)`: walk back to the `.route('/p')`."""
+    while node is not None and node.type == "call_expression":
+        fn = node.child_by_field_name("function")
+        if fn is None or fn.type != "member_expression":
+            return None
+        prop = _txt(fn.child_by_field_name("property"))
+        if prop == "route":
+            args = node.child_by_field_name("arguments")
+            first = next(iter(args.named_children), None) if args is not None else None
+            path = _js_string(first)
+            owner = fn.child_by_field_name("object")
+            return (_txt(owner), path) if path is not None and owner is not None else None
+        if prop not in _JS_VERBS:
+            return None
+        node = fn.child_by_field_name("object")
+    return None
+
+
 def _analyze_javascript(root: Node) -> Analysis:
     result = Analysis(calls=_js_calls(root))
 
-    routes = []  # (object, method, path, rest_args, line)
+    routes = []  # (object, method, path, rest_args, line, extra_signals)
     uses = []  # (object, prefix, names, line)
 
     for n in _walk(root):
@@ -354,30 +627,56 @@ def _analyze_javascript(root: Node) -> Analysis:
             continue
         verb, line = _txt(prop), n.start_point.row + 1
 
+        if verb in _JS_VERBS and obj.type == "call_expression":
+            # app.route('/items').get(list).post(guard, create)
+            chain = _js_route_chain(obj)
+            if chain is not None:
+                routes.append((chain[0], verb, chain[1], named, line, []))
+            continue
         if verb in _JS_VERBS and named:
             path = _js_string(named[0])
             if path is not None and (path.startswith("/") or path == "*"):
-                routes.append((_txt(obj), verb, path, named[1:], line))
+                routes.append((_txt(obj), verb, path, named[1:], line, []))
+        elif verb == "route" and named and named[0].type == "object":
+            # fastify.route({ method, url, preHandler, handler })
+            props = _js_props(named[0])
+            url = _js_string(props.get("url")) or _js_string(props.get("path"))
+            if url is not None and url.startswith("/"):
+                handler = props.get("handler")
+                for method in _js_method_list(props.get("method")) or ["GET"]:
+                    routes.append(
+                        (_txt(obj), method.lower(), url, [handler] if handler is not None else [],
+                         line, _js_hook_names(props))
+                    )
+        elif verb == "addHook" and len(named) >= 2 and _js_string(named[0]) in _HOOK_NAMES:
+            uses.append((_txt(obj), None, _js_names(named[1:]), line))
         elif verb == "use" and named:
             prefix = _js_string(named[0])
             rest = named[1:] if prefix is not None else named
             uses.append((_txt(obj), prefix, _js_names(rest), line))
 
-    for obj, verb, path, rest, line in routes:
+    framework = _js_framework(result.imports)
+
+    for obj, verb, path, rest, line, extra in routes:
         signals = [
             s
             for u_obj, prefix, names, u_line in uses
             if u_obj == obj and u_line < line and (prefix is None or path.startswith(prefix))
             for s in names
         ]
+        signals.extend(extra)
+        if rest and rest[0].type == "object":  # fastify.get(path, { preHandler }, handler)
+            signals.extend(_js_hook_names(_js_props(rest[0])))
+            handler_prop = _js_props(rest[0]).get("handler")
+            rest = [handler_prop] if handler_prop is not None else rest[1:]
         handler_name = None
         inline_calls: tuple[str, ...] = ()
         if rest:
             *middleware, handler = rest
             signals.extend(_js_names(middleware))
-            if handler.type in _JS_NAMEABLE:
+            if handler.type in _JS_NAMEABLE or handler.type == "shorthand_property_identifier":
                 handler_name = _txt(handler).rsplit(".", 1)[-1]
-            elif handler.type in ("arrow_function", "function_expression", "function"):
+            elif handler.type in _FUNCS:
                 inline_calls = tuple(_dedupe(c.callee_full for c in _js_calls(handler)))
             else:
                 signals.extend(_js_names([handler]))
@@ -385,7 +684,7 @@ def _analyze_javascript(root: Node) -> Analysis:
             RawEndpoint(
                 method=verb.upper(),
                 path=path,
-                framework="express",
+                framework=framework,
                 line=line,
                 handler_name=handler_name,
                 handler_line=None,

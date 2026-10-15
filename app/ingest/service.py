@@ -174,7 +174,9 @@ def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
         """
         UPDATE endpoints e SET handler_chunk_id = (
             SELECT c.id FROM chunks c
-            WHERE c.repo_id = e.repo_id AND c.kind IN ('function', 'method')
+            WHERE c.repo_id = e.repo_id
+              AND (c.kind IN ('function', 'method')
+                   OR (e.framework = 'django' AND c.kind = 'class'))  -- class-based views
               AND ((e.handler_line IS NOT NULL AND c.file_id = e.file_id
                     AND c.start_line = e.handler_line)
                 OR (e.handler_line IS NULL AND c.name = e.handler_name))
@@ -184,6 +186,56 @@ def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
         """,
         (repo_id,),
     )
+
+
+def _refine_methods(conn: psycopg.Connection, repo_id: int) -> None:
+    """Django routes start as ANY; narrow them using the view's own decorators
+    (@require_POST, @api_view(['GET', 'POST']), ...) once the handler is linked."""
+    rows = conn.execute(
+        """
+        SELECT e.id, array_agg(DISTINCT ce.callee_full)
+        FROM endpoints e
+        JOIN call_edges ce ON ce.caller_chunk_id = e.handler_chunk_id
+        WHERE e.repo_id = %s AND e.method = 'ANY' AND ce.callee_full LIKE '@%%'
+        GROUP BY e.id
+        """,
+        (repo_id,),
+    ).fetchall()
+    # DRF read-only viewsets only answer GET: drop the write routes generated for them.
+    conn.execute(
+        """
+        DELETE FROM endpoints e
+        WHERE e.repo_id = %s AND e.framework = 'django'
+          AND e.method IN ('POST', 'PUT', 'PATCH', 'DELETE')
+          AND EXISTS (SELECT 1 FROM call_edges ce
+                      WHERE ce.caller_chunk_id = e.handler_chunk_id
+                        AND ce.callee_full LIKE '@base:ReadOnly%%')
+        """,
+        (repo_id,),
+    )
+    fixed = {"@require_POST": "POST", "@require_GET": "GET", "@require_safe": "GET"}
+    for endpoint_id, markers in rows:
+        methods: list[str] = []
+        for marker in markers:
+            if marker in fixed:
+                methods.append(fixed[marker])
+            elif marker.startswith(("@api_view:", "@require_http_methods:")):
+                methods.extend(m for m in marker.split(":", 1)[1].split(",") if m)
+        methods = sorted(set(methods))
+        if not methods:
+            continue
+        conn.execute("UPDATE endpoints SET method = %s WHERE id = %s", (methods[0], endpoint_id))
+        for extra in methods[1:]:
+            conn.execute(
+                """
+                INSERT INTO endpoints (repo_id, file_id, method, path, framework, line,
+                    handler_name, handler_line, handler_chunk_id, signals, inline_calls)
+                SELECT repo_id, file_id, %s, path, framework, line,
+                    handler_name, handler_line, handler_chunk_id, signals, inline_calls
+                FROM endpoints WHERE id = %s
+                """,
+                (extra, endpoint_id),
+            )
 
 
 def ingest_repo(
@@ -278,6 +330,7 @@ def ingest_repo(
 
     report("linking", len(files), len(files))
     _resolve_graph(conn, repo_id)
+    _refine_methods(conn, repo_id)
     conn.commit()  # chunks are durable even if embedding fails; re-ingest resumes
     report("embedding", len(files), len(files))
     stats["chunks_embedded"] = embed_pending(conn, repo_id, embedder or get_embedder())

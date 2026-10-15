@@ -83,7 +83,9 @@ def _repo_facts(path: Path = DATASET):
     for rel, language, path in iter_source_files(ds.repo_path):
         data = path.read_bytes()
         chunk_ids |= {f"{rel}::{c.qualified_name}" for c in parse_source(data, language)}
-        endpoints |= {(e.method, e.path) for e in analyze_source(data, language).endpoints}
+        endpoints |= {
+            (e.method, e.path, e.framework) for e in analyze_source(data, language).endpoints
+        }
     return ds, chunk_ids, endpoints
 
 
@@ -100,9 +102,13 @@ def test_every_relevant_label_points_at_a_real_chunk(path):
 def test_labelled_endpoints_match_what_the_analyzer_detects(path):
     ds, _, detected = _repo_facts(path)
 
-    expected = {(e["method"], e["path"]) for e in ds.endpoints}
+    # Django methods are narrowed after ingest (decorators, read-only viewsets), so
+    # offline they are compared by path only.
+    django_paths = {path for _, path, fw in detected if fw == "django"}
+    expected = {("*" if e["path"] in django_paths else e["method"], e["path"]) for e in ds.endpoints}
+    found = {("*" if fw == "django" else m, p) for m, p, fw in detected}
 
-    assert expected == detected
+    assert expected == found
 
 
 # ----------------------------------------------------------- full run (DB)

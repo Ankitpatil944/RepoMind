@@ -1,0 +1,48 @@
+{
+  "name": "orders_fastify",
+  "repo": "../repos/orders_fastify",
+  "questions": [
+    {
+      "id": "token-issue",
+      "question": "Where is the access token created?",
+      "relevant": ["src/auth.ts::issueToken"]
+    },
+    {
+      "id": "token-verify",
+      "question": "How is the bearer token checked before an order is read?",
+      "relevant": ["src/auth.ts::verifyJwt"]
+    },
+    {
+      "id": "admin-cancel",
+      "question": "How is cancelling an order limited to admins?",
+      "relevant": ["src/auth.ts::requireAdmin", "src/handlers.ts::cancelOrder"]
+    },
+    {
+      "id": "create-order",
+      "question": "Where is a new order created?",
+      "relevant": ["src/handlers.ts::createOrder"]
+    },
+    {
+      "id": "invoice-guard",
+      "question": "How is posting an invoice restricted to authenticated callers?",
+      "relevant": ["src/invoices.ts::requireAuth"]
+    },
+    {
+      "id": "public-status",
+      "question": "Which handler reports how many orders exist without logging in?",
+      "relevant": ["src/handlers.ts::statusHandler"]
+    }
+  ],
+  "endpoints": [
+    {"method": "GET", "path": "/health", "handles_authentication": false, "requires_auth": false},
+    {"method": "POST", "path": "/auth/login", "handles_authentication": true, "requires_auth": false},
+    {"method": "GET", "path": "/orders", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/orders/:id", "handles_authentication": false, "requires_auth": true},
+    {"method": "POST", "path": "/orders", "handles_authentication": false, "requires_auth": true},
+    {"method": "DELETE", "path": "/orders/:id", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/public/status", "handles_authentication": false, "requires_auth": false},
+    {"method": "HEAD", "path": "/public/status", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/invoices", "handles_authentication": false, "requires_auth": false},
+    {"method": "POST", "path": "/invoices", "handles_authentication": false, "requires_auth": true}
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "name": "blog_django",
+  "repo": "../repos/blog_django",
+  "questions": [
+    {
+      "id": "login",
+      "question": "How does a user log in and start a session?",
+      "relevant": ["blog/views.py::login_view"],
+      "must_mention": ["/login/"]
+    },
+    {
+      "id": "post-permissions",
+      "question": "Who is allowed to create and edit posts through the API?",
+      "relevant": ["blog/api.py::PostViewSet"]
+    },
+    {
+      "id": "create-form-guard",
+      "question": "How is the new post form restricted to signed-in users?",
+      "relevant": ["blog/views.py::CreatePostView"]
+    },
+    {
+      "id": "word-count",
+      "question": "Where is the number of words in a post computed?",
+      "relevant": ["blog/models.py::Post.word_count"]
+    },
+    {
+      "id": "health",
+      "question": "Which endpoint reports that the API is healthy?",
+      "relevant": ["blog/api.py::health"]
+    },
+    {
+      "id": "author-on-create",
+      "question": "Where is the author attached when a post is created through the API?",
+      "relevant": ["blog/api.py::PostViewSet.perform_create"]
+    },
+    {
+      "id": "tags-readonly",
+      "question": "Which API resource is read-only and open to everyone?",
+      "relevant": ["blog/api.py::TagViewSet"]
+    },
+    {
+      "id": "router",
+      "question": "Where are the REST API routes registered?",
+      "relevant": ["blog/urls.py::<module>"]
+    }
+  ],
+  "endpoints": [
+    {"method": "ANY", "path": "/", "handles_authentication": false, "requires_auth": false},
+    {"method": "POST", "path": "/login/", "handles_authentication": true, "requires_auth": false},
+    {"method": "POST", "path": "/logout/", "handles_authentication": true, "requires_auth": true},
+    {"method": "ANY", "path": "/posts/<int:post_id>/", "handles_authentication": false, "requires_auth": false},
+    {"method": "ANY", "path": "/posts/new/", "handles_authentication": false, "requires_auth": true},
+    {"method": "ANY", "path": "/dashboard/", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/api/health/", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/api/posts", "handles_authentication": false, "requires_auth": true},
+    {"method": "POST", "path": "/api/posts", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/api/posts/<pk>", "handles_authentication": false, "requires_auth": true},
+    {"method": "PUT", "path": "/api/posts/<pk>", "handles_authentication": false, "requires_auth": true},
+    {"method": "PATCH", "path": "/api/posts/<pk>", "handles_authentication": false, "requires_auth": true},
+    {"method": "DELETE", "path": "/api/posts/<pk>", "handles_authentication": false, "requires_auth": true},
+    {"method": "GET", "path": "/api/tags", "handles_authentication": false, "requires_auth": false},
+    {"method": "GET", "path": "/api/tags/<pk>", "handles_authentication": false, "requires_auth": false}
+  ]
+}

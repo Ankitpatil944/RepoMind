@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- More frameworks: Fastify (options, `route({...})`, hooks), Koa/Hono, Express route chains,
+  Django `path()`/`re_path()` and Django REST framework (routers, `permission_classes`, mixins).
+- Two more benchmark apps (Django + DRF, Fastify + Express) in the eval gate.
+
 ## 0.1.0
 
 First public release.

@@ -54,6 +54,34 @@
           "retrieval.recall@10": 0.82,
           "retrieval.recall@5": 0.73
         }
+      },
+      "blog_django": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.95,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.95,
+          "retrieval.hit@1": 0.57,
+          "retrieval.hit@3": 0.7,
+          "retrieval.mrr": 0.68,
+          "retrieval.recall@10": 0.95,
+          "retrieval.recall@5": 0.82
+        }
+      },
+      "orders_fastify": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.95,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.95,
+          "retrieval.hit@1": 0.28,
+          "retrieval.hit@3": 0.62,
+          "retrieval.mrr": 0.46,
+          "retrieval.recall@10": 0.78,
+          "retrieval.recall@5": 0.7
+        }
       }
     }
   },
@@ -97,6 +125,34 @@
           "retrieval.mrr": 0.76,
           "retrieval.recall@10": 0.95,
           "retrieval.recall@5": 0.85
+        }
+      },
+      "blog_django": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.9,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.9,
+          "retrieval.hit@1": 0.83,
+          "retrieval.hit@3": 0.95,
+          "retrieval.mrr": 0.89,
+          "retrieval.recall@10": 0.95,
+          "retrieval.recall@5": 0.95
+        }
+      },
+      "orders_fastify": {
+        "min": {
+          "endpoints.auth_f1": 0.95,
+          "endpoints.classification_accuracy": 0.9,
+          "endpoints.detection_precision": 0.95,
+          "endpoints.detection_recall": 0.95,
+          "endpoints.requires_auth_f1": 0.9,
+          "retrieval.hit@1": 0.45,
+          "retrieval.hit@3": 0.62,
+          "retrieval.mrr": 0.59,
+          "retrieval.recall@10": 0.95,
+          "retrieval.recall@5": 0.78
         }
       }
     }

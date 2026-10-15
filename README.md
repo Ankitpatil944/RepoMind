@@ -236,8 +236,9 @@ flowchart LR
 | | Supported |
 |---|---|
 | Languages | Python, JavaScript, TypeScript (`.py .js .jsx .mjs .cjs .ts .tsx .mts .cts`) |
-| Route detection | FastAPI / Flask decorators, `APIRouter(prefix=...)`, `Depends(...)`, Express `app.get/post/...` and `router.use(...)` |
-| Not supported yet | Go, Java, etc. (Python, JavaScript and TypeScript are); Django URL confs; routers mounted across files with a prefix; docs/Markdown/config files are not indexed |
+| Route detection | FastAPI / Flask decorators, `APIRouter(prefix=...)`, `Depends(...)`; Express / Koa / Hono `app.get/post/...`, `router.use(...)`, `route('/x').get().post()`; Fastify (`{ preHandler }` options, `route({...})`, `addHook`); NestJS controllers and guards; Django `path()` / `re_path()` and DRF `router.register` |
+| Auth signals | decorators and middleware (`login_required`, `@UseGuards`, `preHandler`), DRF `permission_classes`, mixins such as `LoginRequiredMixin`, HMAC/signature middleware |
+| Not supported yet | Go, Java/Spring, Ruby, PHP; Django `include('app.urls')` across files and DRF `@action`; routers mounted across files with a prefix; docs/Markdown/config files are not indexed. Django routes that accept any method are reported as `ANY` |
 
 **Heuristics, not magic.** Auth classification is based on names and patterns (`login`,
 `Depends(get_current_user)`, `jwt.decode`, ...). "No auth detected" means no signal was
@@ -262,8 +263,9 @@ Everything is optional. Copy `.env.example` to `.env` to change defaults.
 docker compose exec api python -m evals.run --embedder fastembed --reranker fastembed
 ```
 
-The harness indexes three small benchmark apps (FastAPI `shop_api`, NestJS + Express
-`notes_nest`, Flask `inventory_flask`), asks 36 labelled questions, and checks retrieval
+The harness indexes five small benchmark apps (FastAPI `shop_api`, NestJS + Express
+`notes_nest`, Flask `inventory_flask`, Django + DRF `blog_django`, Fastify + Express
+`orders_fastify`), asks 50 labelled questions, and checks retrieval
 (hit@k, recall, MRR), endpoint detection and auth classification. Floors live in
 `evals/thresholds.json` (per dataset); CI fails if a metric drops below them.
 
@@ -275,8 +277,12 @@ The harness indexes three small benchmark apps (FastAPI `shop_api`, NestJS + Exp
 | notes_nest | bge-small + reranker | 0.60 | 0.85 | 0.73 | 1.00 / 1.00 | 1.00 |
 | inventory_flask | hashing (no model) | 0.70 | 0.70 | 0.70 | 1.00 / 1.00 | 1.00 |
 | inventory_flask | bge-small + reranker | 0.70 | 1.00 | 0.81 | 1.00 / 1.00 | 1.00 |
+| blog_django | hashing (no model) | 0.62 | 1.00 | 0.73 | 1.00 / 1.00 | 1.00 |
+| blog_django | bge-small + reranker | 0.88 | 1.00 | 0.94 | 1.00 / 1.00 | 1.00 |
+| orders_fastify | hashing (no model) | 0.33 | 0.83 | 0.51 | 1.00 / 1.00 | 1.00 |
+| orders_fastify | bge-small + reranker | 0.50 | 1.00 | 0.64 | 1.00 / 1.00 | 1.00 |
 
-> **Read this honestly:** the benchmarks are small (36 questions, ~140 chunks) and I wrote
+> **Read this honestly:** the benchmarks are small (50 questions, ~190 chunks) and I wrote
 > them myself, then fixed the analyzer where they exposed gaps, so the endpoint scores are
 > optimistic. The two newer apps are harder for retrieval (hit@1 0.60 to 0.70 with real
 > models), which is the more realistic picture. Larger, third-party benchmarks are
@@ -355,7 +361,9 @@ Also done: three benchmark apps in the eval gate (FastAPI, NestJS + Express, Fla
 per-dataset floors in `evals/thresholds.json`; TypeScript / TSX parsing, Express routes in TypeScript, and NestJS controllers
 (`@Controller`, `@Get`/`@Post`..., class- and method-level `@UseGuards`).
 
-Planned: more frameworks (Fastify, Koa, Django, Spring), cross-file router prefixes, a benchmark of real third-party repos,
+Also done: Fastify, Koa/Hono, Django and Django REST framework route detection.
+
+Planned: Java/Spring and Go, cross-file router prefixes, a benchmark of real third-party repos,
 LLM-judged faithfulness, streaming answers.
 
 ## Contributing
