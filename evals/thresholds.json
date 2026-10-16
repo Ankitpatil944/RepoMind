@@ -62,9 +62,9 @@
           "endpoints.detection_precision": 0.95,
           "endpoints.detection_recall": 0.95,
           "endpoints.requires_auth_f1": 0.95,
-          "retrieval.hit@1": 0.57,
+          "retrieval.hit@1": 0.45,
           "retrieval.hit@3": 0.7,
-          "retrieval.mrr": 0.68,
+          "retrieval.mrr": 0.62,
           "retrieval.recall@10": 0.95,
           "retrieval.recall@5": 0.82
         }

@@ -32,3 +32,16 @@ def query_terms(query: str) -> list[str]:
         if word not in STOPWORDS and len(word) > 1:
             seen[word] = None
     return list(seen)
+
+
+def stem(word: str) -> str:
+    """Crude suffix stripper so 'created' / 'creating' / 'creates' share a prefix with
+    'create' and 'creation'. Over-matching is fine: it only widens recall, and the
+    reranker sorts out precision."""
+    for suffix in ("ing", "ed", "es", "s", "e"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            word = word[: -len(suffix)]
+            break
+    if len(word) >= 4 and word[-1] == word[-2]:  # 'logg' -> 'log'
+        word = word[:-1]
+    return word

@@ -46,3 +46,4 @@ def test_hybrid_search_applies_reranker(conn, indexed_repo):
 
 def test_hybrid_search_is_scoped_to_repo(conn, indexed_repo):
     assert hybrid_search(conn, indexed_repo + 10_000, "login", HashingEmbedder()) == []
+

@@ -16,3 +16,12 @@ def test_search_text_exposes_split_names():
 
     assert "session store get" in text
     assert text.endswith("return None")
+
+
+def test_stem_joins_inflections_to_a_shared_prefix():
+    from app.text import stem
+
+    assert stem("created") == stem("creating") == stem("creates") == "creat"
+    assert "create".startswith(stem("created"))
+    assert stem("logging") == "log"
+    assert stem("jwt") == "jwt"  # too short to strip

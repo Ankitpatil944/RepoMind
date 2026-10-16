@@ -7,7 +7,7 @@ import psycopg
 
 from app.embed import Embedder, to_pgvector
 from app.rerank import Reranker
-from app.text import query_terms
+from app.text import query_terms, stem
 
 RRF_K = 60
 CANDIDATES_PER_RETRIEVER = 30
@@ -55,7 +55,8 @@ def _keyword_ids(conn: psycopg.Connection, repo_id: int, terms: list[str], limit
         return []
     # OR-semantics: natural-language questions rarely have every word in one chunk.
     # Terms are [a-z0-9]+ only (see split_identifiers), so the tsquery is safe.
-    tsquery = " | ".join(terms)
+    # Prefix match on a crude stem, since the 'simple' config does no stemming.
+    tsquery = " | ".join(f"{stem(t)}:*" for t in terms)
     rows = conn.execute(
         """
         SELECT id FROM chunks
