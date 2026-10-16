@@ -24,9 +24,9 @@ interface Props {
 }
 
 const MINIMAP_COLOR: Record<string, string> = {
-  endpoint: 'var(--text-2)',
-  function: 'var(--border-control)',
-  external: 'var(--border-subtle)',
+  endpoint: 'var(--accent-400)',
+  function: 'var(--teal)',
+  external: 'var(--border-control)',
 }
 
 export function FlowCanvas({ flow, selected, onSelect, onRefocus }: Props) {
@@ -95,13 +95,14 @@ export function FlowCanvas({ flow, selected, onSelect, onRefocus }: Props) {
             active: isActive,
             dim: receded || (!isActive && active.size > 0),
             delay: ((columns.get(Math.round(positions.get(e.source)?.x ?? 0)) ?? 0) * 0.35) % 3,
+            line: e.line,
           },
           className: isActive ? 'edge-active' : active.size ? 'edge-dim' : undefined,
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 14,
             height: 14,
-            color: isActive ? 'var(--accent-500)' : 'var(--border-control)',
+            color: isActive ? 'var(--accent-400)' : '#3a4654',
           },
           focusable: false,
         }
@@ -149,7 +150,7 @@ export function FlowCanvas({ flow, selected, onSelect, onRefocus }: Props) {
       }}
       aria-label="Call graph"
     >
-      <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="var(--border-subtle)" />
+      <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#1b222a" />
       <Controls showInteractive={false} position="bottom-left" />
       <FitController candidates={candidates} deps={`${flow.root}|${flow.depth}|${flow.direction}`} />
       <MiniMap

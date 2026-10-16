@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { FileEntry } from '../../api/types'
 import { layoutTreemap } from '../../lib/treemap'
-import { langColor, langName } from './colors'
+import { heat, langName } from './colors'
 
 const W = 100
 const H = 52
@@ -29,9 +29,13 @@ interface Group {
   cells: Cell[]
 }
 
-/** Two-level treemap: directories laid out by total size, files inside each.
- *  Cells cascade in; hovering lifts one. Every cell is a real button. */
+/** Risk map: a two-level treemap. Size = lines of code, heat = complexity of the file
+ *  relative to the most complex one. Hovering a tile dims the rest and fills the
+ *  readout line; hot tiles pulse. Every cell is a real button. */
 export function Treemap({ files, onOpen }: Props) {
+  const [hover, setHover] = useState<FileEntry | null>(null)
+  const maxCx = useMemo(() => Math.max(1, ...files.map((f) => f.complexity)), [files])
+
   const groups = useMemo<Group[]>(() => {
     const byDir = new Map<string, FileEntry[]>()
     for (const f of files) {
@@ -70,8 +74,9 @@ export function Treemap({ files, onOpen }: Props) {
       <div
         role="group"
         aria-label="Repository structure treemap"
-        className="relative w-full overflow-hidden rounded-lg bg-bg-0"
+        className="relative w-full overflow-hidden rounded-[10px] border border-border-subtle bg-bg-1"
         style={{ aspectRatio: `${W} / ${H}` }}
+        onMouseLeave={() => setHover(null)}
       >
         {groups.map((g) => (
           <div
@@ -91,56 +96,82 @@ export function Treemap({ files, onOpen }: Props) {
               const heightPct = (c.h / H) * 100
               const big = c.w > 7 && heightPct > 14
               const huge = c.w > 14 && heightPct > 26
+              const t = c.file.complexity / maxCx
+              const { bg, border } = heat(t)
+              const dimmed = hover !== null && hover.path !== c.file.path
               return (
                 <button
                   key={c.file.path}
                   type="button"
                   onClick={() => onOpen(c.file.path)}
+                  onMouseEnter={() => setHover(c.file)}
+                  onFocus={() => setHover(c.file)}
+                  onBlur={() => setHover(null)}
                   title={`${c.file.path}\n${c.file.loc} lines · ${c.file.symbols} symbols${c.file.endpoints ? ` · ${c.file.endpoints} routes` : ''}`}
                   aria-label={`${c.file.path}, ${c.file.loc} lines${c.file.endpoints ? `, ${c.file.endpoints} routes` : ''}`}
-                  className="treemap-cell cell-in absolute overflow-hidden rounded-[5px] border p-1 text-left"
+                  className="treemap-cell pop absolute p-[1.5px] text-left"
                   style={{
                     left: `${(c.x / g.w) * 100}%`,
                     top: `${(c.y / g.h) * 100}%`,
-                    width: `calc(${(c.w / g.w) * 100}% - 2px)`,
-                    height: `calc(${(c.h / g.h) * 100}% - 2px)`,
-                    margin: 1,
+                    width: `${(c.w / g.w) * 100}%`,
+                    height: `${(c.h / g.h) * 100}%`,
                     animationDelay: `${Math.min(i, 40) * 18}ms`,
-                    background: `color-mix(in srgb, ${langColor(c.file.language)} 18%, var(--bg-2))`,
-                    borderColor: `color-mix(in srgb, ${langColor(c.file.language)} 42%, var(--bg-2))`,
-                    boxShadow: c.file.endpoints
-                      ? 'inset 0 -3px 0 var(--accent-500)'
-                      : undefined,
+                    opacity: dimmed ? 0.4 : 1,
+                    transition: 'opacity 150ms linear, filter 150ms linear',
                   }}
                 >
-                  {big && (
-                    <span className="block truncate font-mono text-[11px] leading-tight text-text-1">
-                      {c.file.path.split('/').pop()}
-                    </span>
-                  )}
-                  {huge && (
-                    <span className="block truncate font-mono text-[10.5px] text-text-2">
-                      {c.file.loc} loc{c.file.endpoints ? ` · ${c.file.endpoints} routes` : ''}
-                    </span>
-                  )}
+                  <span
+                    className={`flex h-full w-full flex-col gap-0.5 overflow-hidden rounded-[5px] border p-[7px_8px] ${t > 0.7 ? 'breathe' : ''}`}
+                    style={{
+                      background: bg,
+                      borderColor: border,
+                      boxShadow: c.file.endpoints ? 'inset 0 -3px 0 var(--accent-400)' : undefined,
+                    }}
+                  >
+                    {big && (
+                      <span className="block truncate font-mono text-[11px] leading-tight text-text-1">
+                        {c.file.path.split('/').pop()}
+                      </span>
+                    )}
+                    {huge && (
+                      <span className="block truncate font-mono text-[10.5px] text-text-2">
+                        {c.file.loc} loc{c.file.endpoints ? ` · ${c.file.endpoints} routes` : ''}
+                      </span>
+                    )}
+                  </span>
                 </button>
               )
             })}
-            <span className="pointer-events-none absolute left-1.5 top-1 z-[1] rounded bg-bg-0/80 px-1 font-mono text-[10.5px] text-text-2">
+            <span className="pointer-events-none absolute left-2 top-1.5 z-[1] rounded bg-bg-0/80 px-1 font-mono text-[10.5px] text-text-2">
               {g.name}
             </span>
           </div>
         ))}
       </div>
-      <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-text-2" aria-label="Treemap legend">
-        {[...new Set(files.map((f) => f.language))].map((l) => (
-          <li key={l} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: langColor(l) }} aria-hidden />
-            <span>{langName(l)}</span>
-          </li>
-        ))}
+
+      <p className="mt-2 min-h-5 font-mono text-[12px] text-text-2" aria-live="polite">
+        {hover ? (
+          <>
+            <span className="text-cream">{hover.path}</span> · {hover.loc} lines · {hover.symbols} symbols
+            {hover.endpoints ? ` · ${hover.endpoints} routes` : ''} · {langName(hover.language)} · complexity{' '}
+            {hover.complexity}
+          </>
+        ) : (
+          'Hover a tile for details. Click to open it.'
+        )}
+      </p>
+      <ul className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-text-2" aria-label="Treemap legend">
         <li className="flex items-center gap-1.5">
-          <span className="h-0.5 w-4 bg-accent-500" aria-hidden />
+          Cool
+          <span
+            className="h-2 w-16 rounded-full"
+            style={{ background: `linear-gradient(90deg, ${heat(0).bg}, ${heat(1).border})` }}
+            aria-hidden
+          />
+          Hot (complexity)
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-0.5 w-4 bg-sage" aria-hidden />
           Defines HTTP routes
         </li>
       </ul>

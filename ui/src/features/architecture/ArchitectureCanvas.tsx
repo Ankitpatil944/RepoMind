@@ -28,7 +28,7 @@ type RFModule = Node<ModuleData, 'module'>
 
 const SIZE = { width: 224, height: 92 }
 const SELECTED =
-  'border-accent-500 shadow-[0_0_0_1px_var(--accent-500),0_0_24px_color-mix(in_srgb,var(--accent-500)_28%,transparent)] node-selected-ping'
+  'border-sage shadow-[0_0_0_1px_var(--accent-400),0_0_24px_color-mix(in_srgb,var(--accent-400)_28%,transparent)] node-selected-ping'
 
 function ModuleCard({ data, selected }: NodeProps<RFModule>) {
   const m = data.m
@@ -37,7 +37,7 @@ function ModuleCard({ data, selected }: NodeProps<RFModule>) {
   return (
     <div
       className={cx(
-        'node-card node-enter h-full w-full rounded-lg border bg-bg-2 px-3 py-2',
+        'node-card node-enter arch-card h-full w-full rounded-[10px] border bg-bg-2 px-3 py-2',
         selected ? SELECTED : 'border-border-control',
       )}
       style={{ animationDelay: `${Math.min(data.col, 8) * 70}ms` }}
@@ -45,9 +45,10 @@ function ModuleCard({ data, selected }: NodeProps<RFModule>) {
     >
       <Handle type="target" position={Position.Left} isConnectable={false} />
       <Handle type="source" position={Position.Right} isConnectable={false} />
+      {selected && <span className="arch-orbit" aria-hidden />}
       <div className="flex items-center gap-2">
-        <Icon size={14} className="shrink-0 text-text-2" aria-hidden />
-        <span className="truncate font-mono text-[13px] font-medium">{m.label}</span>
+        <Icon size={14} className="shrink-0 text-teal" aria-hidden />
+        <span className="truncate font-mono text-[13px] font-medium text-cream">{m.label}</span>
         {m.endpoints > 0 && (
           <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-text-1">
             <Route size={11} aria-hidden />

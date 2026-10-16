@@ -134,7 +134,7 @@ function ChunkSummary({
           </pre>
         )}
         {f.doc && (
-          <blockquote className="mt-3 border-l-2 border-accent-500 pl-3 text-[14px] text-text-1">
+          <blockquote className="serif mt-3 border-l-2 border-sage-border pl-3 text-[21px] leading-snug text-cream">
             {f.doc}
           </blockquote>
         )}
@@ -282,7 +282,7 @@ function FileBody({
           {info.language} · {info.loc.toLocaleString()} lines · {info.symbols.length} symbols
         </p>
         {info.doc && (
-          <blockquote className="mt-3 border-l-2 border-accent-500 pl-3 text-[14px]">{info.doc}</blockquote>
+          <blockquote className="serif mt-3 border-l-2 border-sage-border pl-3 text-[21px] leading-snug text-cream">{info.doc}</blockquote>
         )}
       </div>
 

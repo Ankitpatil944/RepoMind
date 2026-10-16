@@ -1,10 +1,17 @@
-import { BaseEdge, getSmoothStepPath, type Edge, type EdgeProps } from '@xyflow/react'
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type Edge, type EdgeProps } from '@xyflow/react'
 
-export type FlowEdgeData = { active: boolean; dim: boolean; delay: number } & Record<string, unknown>
+export type FlowEdgeData = {
+  active: boolean
+  dim: boolean
+  delay: number
+  /** source line of the call, shown as an `L42` chip while the edge is highlighted */
+  line?: number | null
+} & Record<string, unknown>
 export type RFEdge = Edge<FlowEdgeData, 'flow'>
 
-/** Smooth-step edge with a packet travelling source → target, so the call
- *  direction is visible without reading arrowheads. Dimmed edges stay still. */
+/** Smooth-step edge: a dark underlay, a flowing dashed line on top, and a packet
+ *  travelling source -> target so the call direction is visible without
+ *  arrowheads. Highlighted edges flow faster and carry a line-number chip. */
 export function FlowEdge({
   id,
   sourceX,
@@ -17,7 +24,7 @@ export function FlowEdge({
   style,
   data,
 }: EdgeProps<RFEdge>) {
-  const [path] = getSmoothStepPath({
+  const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     targetX,
@@ -31,11 +38,12 @@ export function FlowEdge({
   const delay = data?.delay ?? 0
   return (
     <>
+      <path d={path} fill="none" stroke="var(--bg-0)" strokeWidth={active ? 5 : 4} strokeLinecap="round" />
       <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />
       {!dim && (
         <circle r={active ? 3.5 : 2.2} className={active ? 'edge-packet edge-packet-active' : 'edge-packet'}>
           <animateMotion
-            dur={active ? '1.2s' : '3s'}
+            dur={active ? '0.9s' : '3.2s'}
             begin={`${delay}s`}
             repeatCount="indefinite"
             path={path}
@@ -44,6 +52,16 @@ export function FlowEdge({
             keySplines="0.4 0 0.2 1"
           />
         </circle>
+      )}
+      {active && data?.line != null && (
+        <EdgeLabelRenderer>
+          <span
+            className="pointer-events-none absolute rounded-[4px] border border-sage-border bg-bg-1 px-1.5 font-mono text-[10.5px] text-sage"
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+          >
+            L{data.line}
+          </span>
+        </EdgeLabelRenderer>
       )}
     </>
   )

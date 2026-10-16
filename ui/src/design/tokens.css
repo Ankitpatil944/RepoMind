@@ -1,47 +1,72 @@
-/* Design tokens: the single source of truth for colour. Components use the
-   Tailwind aliases (bg-bg-1, text-text-2, ...) or var(--token); never raw hex.
-   tokens.test.ts asserts the contrast of every pair that matters. */
+/* Design tokens: the single source of truth for colour (see DESIGN.md).
+   Components use the Tailwind aliases (bg-bg-1, text-text-2, ...) or var(--token);
+   never raw hex. tokens.test.ts asserts the contrast of every pair that matters.
+
+   One accent per meaning:
+     sage       interactive: selection, primary button, citations, focus
+     terracotta risk: public endpoints, high complexity
+     brass      mid complexity, JavaScript
+     teal       calls / links / hover highlight, Python
+     lavender   authentication, TypeScript
+     moss       low complexity, protected, "live", AI on */
 :root {
   color-scheme: dark;
 
   /* surfaces */
-  --bg-0: #0b0b10; /* app */
-  --bg-1: #111118; /* panels */
-  --bg-2: #181822; /* cards, nodes */
-  --bg-3: #20202d; /* hover */
+  --bg-0: #0b0e11; /* ink: app */
+  --bg-1: #0e1217; /* panel: header, nav, inspector */
+  --bg-2: #11151a; /* card */
+  --bg-3: #1e252d; /* raised / hover */
+  --raised: #161b21; /* buttons, menus */
 
   /* text */
-  --text-1: #ececf3;
-  --text-2: #a1a1b5;
-  --text-3: #8383a0;
+  --text-1: #dce3ea;
+  --text-2: #94a1ae;
+  --text-3: #7d8a97;
+  --cream: #f1ece0; /* display / headline */
 
-  /* accent: selection, active path, focus, primary action only */
-  --accent-400: #a78bfa; /* text, links, focus ring */
-  --accent-500: #8b5cf6; /* borders, edges, fills (not text) */
-  --accent-600: #7c3aed; /* primary button, white text */
+  /* accent: sage. 400 = text + focus ring, 500 = borders/edges, 600 = primary fill */
+  --accent-400: #b9c79a;
+  --accent-500: #8a9c6c;
+  --accent-600: #b9c79a;
+  --on-accent: #12160d; /* text on a sage fill */
+  --sage-bg: #1d231a;
+  --sage-border: #4a573b;
+  --sage-border-strong: #5c6b49;
+  --sage-hover: #262e20;
 
-  /* semantic */
-  --auth: #60a5fa; /* endpoint that performs authentication */
-  --ok: #34d399; /* protected */
-  --warn: #fbbf24; /* unresolved / caution */
-  --danger: #f87171; /* error */
+  /* meaning */
+  --auth: #a79fc7; /* lavender: performs authentication */
+  --ok: #8fb996; /* moss: protected, live, AI on */
+  --warn: #cfae6a; /* brass: caution, mid complexity */
+  --danger: #d98a62; /* terracotta: risk, public, error */
+  --teal: #7fb0b4;
+  --terracotta: #d98a62;
+  --brass: #cfae6a;
+  --lavender: #a79fc7;
+  --moss: #8fb996;
 
   /* lines */
-  --border-subtle: #2a2a3a; /* decorative dividers only */
-  --border-control: #646482; /* inputs, buttons, node outlines (>= 3:1) */
+  --border-subtle: #222a33;
+  --border-control: #2d3742;
+  --border-hover: #3a4654;
 
   /* syntax */
-  --syn-keyword: #c4b5fd;
-  --syn-string: #86efac;
-  --syn-number: #fcd34d;
-  --syn-comment: #8383a0;
-  --syn-function: #93c5fd;
-  --syn-type: #f9a8d4;
+  --syn-keyword: #a79fc7;
+  --syn-string: #8fb996;
+  --syn-number: #cfae6a;
+  --syn-comment: #7d8a97;
+  --syn-function: #7fb0b4;
+  --syn-type: #d98a62;
 
   /* shape + motion */
-  --radius-card: 8px;
-  --radius-control: 6px;
+  --radius-card: 10px;
+  --radius-control: 7px;
   --dur-fast: 150ms;
   --dur-panel: 220ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* cursor spotlight (set from JS) */
+  --mx: 50%;
+  --my: 30%;
 }

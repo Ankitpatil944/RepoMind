@@ -368,8 +368,9 @@ LLM-judged faithfulness, streaming answers.
 
 ## Contributing
 
-Issues and PRs are welcome. Please keep changes focused, add tests, run `pytest` and
-`ruff check .`, and avoid adding paid-service dependencies.
+Issues and PRs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the checks CI
+runs, how to add framework support and benchmarks, and PR conventions. In short: keep changes
+focused, add tests, run `pytest` and `ruff check .`, and avoid paid-service dependencies.
 
 ## License
 

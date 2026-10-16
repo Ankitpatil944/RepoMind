@@ -295,7 +295,7 @@ export function ExportDialog({ open, onClose, repoId, repoName }: Props) {
             type="button"
             onClick={copy}
             disabled={!data}
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-accent-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-accent-600 px-3.5 text-[13px] font-semibold text-on-accent transition-colors duration-150 hover:bg-[#cdd8b3] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {copied === 'ok' ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
             {copied === 'ok' ? 'Copied' : 'Copy to clipboard'}

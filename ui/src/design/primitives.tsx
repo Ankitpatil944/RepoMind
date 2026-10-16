@@ -4,11 +4,11 @@ import type { ComponentType, ReactNode } from 'react'
 import { cx } from '../lib/cx'
 
 const METHOD_TONE: Record<string, string> = {
-  GET: 'text-ok',
-  POST: 'text-warn',
-  PUT: 'text-auth',
-  PATCH: 'text-auth',
-  DELETE: 'text-danger',
+  GET: 'text-teal',
+  POST: 'text-sage',
+  PUT: 'text-brass',
+  PATCH: 'text-brass',
+  DELETE: 'text-terracotta',
 }
 
 /** HTTP verb. The word itself carries the meaning; colour is secondary. */
@@ -16,7 +16,7 @@ export function MethodPill({ method, className }: { method: string; className?: 
   return (
     <span
       className={cx(
-        'inline-block min-w-[3.6rem] rounded-[4px] bg-bg-3 px-1.5 py-0.5 text-center font-mono text-[11px] font-medium leading-4',
+        'inline-block min-w-[3.6rem] rounded-[5px] bg-raised px-1.5 py-0.5 text-center font-mono text-[11px] font-medium leading-4',
         METHOD_TONE[method] ?? 'text-text-2',
         className,
       )}
@@ -37,7 +37,7 @@ export function roleOf(e: { handles_authentication?: boolean; requires_auth?: bo
 const ROLE: Record<Role, { label: string; tone: string; Icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }> }> = {
   auth: { label: 'Auth', tone: 'text-auth', Icon: KeyRound },
   protected: { label: 'Protected', tone: 'text-ok', Icon: ShieldCheck },
-  public: { label: 'Public', tone: 'text-text-2', Icon: Globe },
+  public: { label: 'Public', tone: 'text-terracotta', Icon: Globe },
 }
 
 /** Auth role = icon + word + colour, never colour alone. */
@@ -64,7 +64,7 @@ export function RoleBadge({
 
 export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="rounded-[4px] border border-border-control bg-bg-2 px-1.5 py-0.5 font-mono text-[11px] text-text-2">
+    <kbd className="rounded-[5px] border border-b-2 border-border-control bg-bg-1 px-1.5 py-px font-mono text-[11px] text-text-2">
       {children}
     </kbd>
   )
@@ -91,7 +91,7 @@ export function EmptyState({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-10 text-center">
       {icon && <div className="text-text-3">{icon}</div>}
-      <h3 className="text-[15px] font-semibold text-text-1">{title}</h3>
+      <h3 className="serif text-[26px] leading-tight text-cream">{title}</h3>
       {children && <div className="max-w-sm text-text-2">{children}</div>}
     </div>
   )
@@ -101,7 +101,7 @@ export function ErrorNote({ children, title = 'Something went wrong' }: { childr
   return (
     <div
       role="alert"
-      className="flex gap-2 rounded-lg border border-border-control bg-bg-2 p-3 text-[13px] text-text-1"
+      className="flex gap-2 rounded-[10px] border border-border-control bg-bg-2 p-3 text-[13px] text-text-1"
     >
       <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warn" aria-hidden />
       <div>
@@ -133,8 +133,8 @@ export function IconButton({
       aria-pressed={pressed}
       onClick={onClick}
       className={cx(
-        'inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-text-2 transition-colors duration-150 hover:bg-bg-3 hover:text-text-1',
-        pressed && 'border-border-control bg-bg-3 text-text-1',
+        'inline-flex h-8 w-8 items-center justify-center rounded-[7px] border border-transparent text-text-2 transition-colors duration-150 hover:bg-bg-3 hover:text-text-1',
+        pressed && 'border-sage-border bg-sage-bg text-sage',
         className,
       )}
     >
@@ -155,7 +155,7 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex rounded-md border border-border-control p-0.5">
+    <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded-[7px] border border-border-control">
       {options.map((o) => (
         <button
           key={o.value}
@@ -163,8 +163,10 @@ export function Segmented<T extends string>({
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
           className={cx(
-            'h-7 rounded-[4px] px-2.5 text-[12px] font-medium transition-colors duration-150',
-            o.value === value ? 'bg-bg-3 text-text-1' : 'text-text-2 hover:text-text-1',
+            'h-[30px] px-3 text-[12px] font-medium transition-colors duration-150',
+            o.value === value
+              ? 'bg-sage-bg text-sage shadow-[inset_0_0_0_1px_var(--accent-400)]'
+              : 'bg-bg-2 text-text-2 hover:bg-bg-3 hover:text-text-1',
           )}
         >
           {o.label}

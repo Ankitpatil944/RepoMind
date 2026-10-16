@@ -29,6 +29,7 @@ import { SummaryPane } from '../features/summary/SummaryPane'
 import { ExportDialog } from '../features/export/ExportDialog'
 import { Header } from './Header'
 import { IndexDialog } from './IndexDialog'
+import { Intro } from './Intro'
 import { usePanelWidth } from './usePanelWidth'
 
 // Heavy dependencies (React Flow + dagre, CodeMirror, markdown) load on demand.
@@ -49,8 +50,8 @@ const Loading = ({ label }: { label: string }) => (
 type Pane = 'explorer' | 'graph' | 'inspector'
 
 const TAB_CLASS =
-  'relative h-10 px-3.5 text-[13px] font-medium text-text-2 transition-colors duration-150 hover:text-text-1 data-[state=active]:text-text-1 ' +
-  "data-[state=active]:after:absolute data-[state=active]:after:inset-x-3 data-[state=active]:after:bottom-0 data-[state=active]:after:h-0.5 data-[state=active]:after:rounded data-[state=active]:after:bg-accent-500 data-[state=active]:after:content-['']"
+  'relative h-[38px] flex-1 text-[13px] font-medium text-text-2 transition-colors duration-150 hover:text-text-1 data-[state=active]:text-cream ' +
+  "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:rounded after:bg-sage after:transition-transform after:duration-[450ms] after:ease-[cubic-bezier(.2,.8,.2,1)] after:content-[''] data-[state=active]:after:scale-x-100"
 
 const VIEWS: Array<{ id: View; label: string; Icon: typeof Network }> = [
   { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
@@ -71,6 +72,28 @@ export default function App() {
   const repo = repoList.find((r) => r.id === s.repo) ?? null
 
   const [pane, setPane] = useState<Pane>('graph')
+  const rootRef = useRef<HTMLDivElement>(null)
+  // The envelope intro plays once per browser session, never in tests, and is
+  // skipped for reduced-motion users.
+  const [introDone, setIntroDone] = useState(() => {
+    try {
+      return (
+        import.meta.env.MODE === 'test' ||
+        sessionStorage.getItem('rm.intro') === '1' ||
+        !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      )
+    } catch {
+      return true
+    }
+  })
+  const finishIntro = useCallback(() => {
+    try {
+      sessionStorage.setItem('rm.intro', '1')
+    } catch {
+      /* storage can be unavailable; the intro just replays */
+    }
+    setIntroDone(true)
+  }, [])
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [indexOpen, setIndexOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
@@ -233,6 +256,30 @@ export default function App() {
     [set],
   )
 
+  /* The cursor spotlight follows the pointer; rAF-throttled, written as CSS vars. */
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || typeof requestAnimationFrame === 'undefined') return
+    let raf = 0
+    let x = 0
+    let y = 0
+    const onMove = (e: PointerEvent) => {
+      x = e.clientX
+      y = e.clientY
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        el.style.setProperty('--mx', `${x}px`)
+        el.style.setProperty('--my', `${y}px`)
+      })
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [])
+
   /* ---------------------------------------------------------- shortcuts */
 
   useEffect(() => {
@@ -290,7 +337,7 @@ export default function App() {
         : null
 
   return (
-    <div className="flex h-full flex-col">
+    <div ref={rootRef} className="spotlight flex h-full flex-col">
       <Header
         repos={repoList}
         repo={repo}
@@ -302,6 +349,9 @@ export default function App() {
         onPalette={() => setPaletteOpen(true)}
         onIndex={() => setIndexOpen(true)}
         onExport={() => setExportOpen(true)}
+        ask={
+          <AskBar ref={askInput} disabled={repoId === null} pending={!!ask?.pending} aiStatus={aiStatus} onAsk={doAsk} />
+        }
       />
 
       {repoList.length === 0 ? (
@@ -312,7 +362,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIndexOpen(true)}
-                className="h-9 rounded-md bg-accent-600 px-4 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-accent-500"
+                className="h-9 rounded-[7px] bg-accent-600 px-4 text-[13px] font-semibold text-on-accent transition-colors duration-150 hover:bg-[#cdd8b3]"
               >
                 Index a project
               </button>
@@ -345,7 +395,7 @@ export default function App() {
               aria-label="Explorer"
               style={{ width: explorerPanel.width }}
               className={cx(
-                'min-h-0 shrink-0 flex-col border-r border-border-subtle bg-bg-1 max-lg:!w-full max-lg:flex-1',
+                'relative z-[1] min-h-0 shrink-0 flex-col border-r border-border-subtle bg-bg-1 max-lg:!w-full max-lg:flex-1',
                 pane === 'explorer' ? 'flex' : 'hidden lg:flex',
                 !explorerOpen && 'lg:!hidden',
               )}
@@ -368,7 +418,7 @@ export default function App() {
               {...explorerPanel.separatorProps}
               aria-label="Resize explorer"
               className={cx(
-                'hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent-500/60',
+                'hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-sage',
                 explorerOpen && 'lg:block',
               )}
             />
@@ -376,10 +426,10 @@ export default function App() {
             {/* Canvas */}
             <main
               aria-label="Workspace"
-              className={cx('min-h-0 min-w-0 flex-1 flex-col bg-bg-0', pane === 'graph' ? 'flex' : 'hidden lg:flex')}
+              className={cx('dotgrid relative z-[1] min-h-0 min-w-0 flex-1 flex-col', pane === 'graph' ? 'flex' : 'hidden lg:flex')}
             >
               <div className="shrink-0 border-b border-border-subtle bg-bg-1">
-                <div className="flex items-center px-2">
+                <div className="flex items-center px-3">
                   <IconButton
                     label={explorerOpen ? 'Hide explorer  [' : 'Show explorer  ['}
                     pressed={explorerOpen}
@@ -388,7 +438,7 @@ export default function App() {
                   >
                     <PanelLeft size={16} aria-hidden />
                   </IconButton>
-                  <div role="tablist" aria-label="View" className="flex items-center">
+                  <div role="tablist" aria-label="View" className="relative flex items-center">
                     {VIEWS.map(({ id, label, Icon }) => (
                       <button
                         key={id}
@@ -397,29 +447,36 @@ export default function App() {
                         aria-selected={s.view === id}
                         onClick={() => setView(id)}
                         className={cx(
-                          'relative inline-flex h-10 items-center gap-1.5 whitespace-nowrap px-3.5 text-[13px] font-medium transition-colors duration-150',
-                          s.view === id
-                            ? "text-text-1 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded after:bg-accent-500 after:content-['']"
-                            : 'text-text-2 hover:text-text-1',
+                          'inline-flex h-[46px] w-[132px] items-center justify-center gap-1.5 whitespace-nowrap text-[14px] font-medium transition-colors duration-150',
+                          s.view === id ? 'text-cream' : 'text-text-2 hover:text-text-1',
                         )}
                       >
                         <Icon size={14} aria-hidden />
                         {label}
                       </button>
                     ))}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-[132px] bg-sage transition-transform duration-[450ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+                      style={{ transform: `translateX(${VIEWS.findIndex((v) => v.id === s.view) * 132}px)` }}
+                    />
                   </div>
+                  <p className="ml-auto mr-3 hidden items-center gap-2 whitespace-nowrap font-mono text-[11.5px] text-text-2 2xl:flex">
+                    <span className="live-dot" aria-hidden />
+                    {repo ? `${repo.files} files · ${repo.chunks} chunks indexed` : 'ready'} · nothing left this machine
+                  </p>
                   <IconButton
                     label={inspectorOpen ? 'Hide inspector  ]' : 'Show inspector  ]'}
                     pressed={inspectorOpen}
                     onClick={() => setInspectorOpen((o) => !o)}
-                    className="ml-auto max-lg:hidden"
+                    className="max-lg:hidden 2xl:ml-0 ml-auto"
                   >
                     <PanelRight size={16} aria-hidden />
                   </IconButton>
                 </div>
 
                 {s.view === 'flow' && (
-                  <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-3 py-1.5">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-4 py-2">
                     <Segmented
                       label="Direction"
                       value={s.dir}
@@ -535,7 +592,7 @@ export default function App() {
               {...inspectorPanel.separatorProps}
               aria-label="Resize inspector"
               className={cx(
-                'hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent-500/60',
+                'hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-sage',
                 inspectorOpen && 'lg:block',
               )}
             />
@@ -545,7 +602,7 @@ export default function App() {
               aria-label="Inspector"
               style={{ width: inspectorPanel.width }}
               className={cx(
-                'min-h-0 shrink-0 flex-col border-l border-border-subtle bg-bg-1 max-lg:!w-full max-lg:flex-1',
+                'relative z-[1] min-h-0 shrink-0 flex-col border-l border-border-subtle bg-bg-1 max-lg:!w-full max-lg:flex-1',
                 pane === 'inspector' ? 'flex' : 'hidden lg:flex',
                 !inspectorOpen && 'lg:!hidden',
               )}
@@ -555,7 +612,7 @@ export default function App() {
                 onValueChange={(v) => set({ tab: v as InspectorTab })}
                 className="flex h-full min-h-0 flex-col"
               >
-                <Tabs.List aria-label="Inspector" className="flex shrink-0 border-b border-border-subtle">
+                <Tabs.List aria-label="Inspector" className="flex shrink-0 border-b border-border-subtle px-2">
                   <Tabs.Trigger value="summary" className={TAB_CLASS}>
                     Summary
                   </Tabs.Trigger>
@@ -621,11 +678,12 @@ export default function App() {
               </Tabs.Root>
             </aside>
           </div>
-
-          <AskBar ref={askInput} disabled={repoId === null} pending={!!ask?.pending} aiStatus={aiStatus} onAsk={doAsk} />
         </>
       )}
 
+      {!introDone && repoList.length > 0 && (
+        <Intro repos={repoList} onPick={(id) => set({ repo: id, view: 'overview' })} onDone={finishIntro} />
+      )}
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
@@ -690,7 +748,7 @@ function Legend() {
         <ShieldCheck size={13} className="text-ok" aria-hidden /> Protected
       </li>
       <li className="flex items-center gap-1.5">
-        <Globe size={13} aria-hidden /> Public
+        <Globe size={13} className="text-terracotta" aria-hidden /> Public
       </li>
       <li className="flex items-center gap-1.5">
         <ExternalLink size={13} aria-hidden /> External (dashed)

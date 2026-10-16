@@ -96,7 +96,7 @@ export function IndexDialog({ open, onClose, onIndexed }: Props) {
           <button
             type="submit"
             disabled={!path.trim() || ingest.isPending}
-            className="h-9 rounded-md bg-accent-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 rounded-md bg-accent-600 px-3.5 text-[13px] font-semibold text-on-accent transition-colors duration-150 hover:bg-[#cdd8b3] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Index
           </button>

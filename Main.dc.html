@@ -1,0 +1,1814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RepoMind</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0b0e11}
+.rm{font-family:'Geist','Helvetica Neue',system-ui,sans-serif;font-size:13px;line-height:1.45;color:#dce3ea;-webkit-font-smoothing:antialiased}
+.rm *{box-sizing:border-box}
+.rm button,.rm input{font-family:inherit;color:inherit}
+.rm .mono,.mono{font-family:'Geist Mono',ui-monospace,Menlo,Consolas,monospace}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rm :focus-visible{outline:2px solid #b9c79a;outline-offset:2px}
+.rm-scroll{scrollbar-width:thin;scrollbar-color:#2d3742 transparent}
+.rm-btn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid #2d3742;background:#161b21;color:#dce3ea;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.rm-btn:hover{background:#1e252d;border-color:#3a4654}
+.rm-btn[disabled]{opacity:.45;cursor:default}
+.rm-btn-primary{background:#b9c79a;border-color:#b9c79a;color:#12160d;font-weight:600}
+.rm-btn-primary:hover{background:#cdd8b3;border-color:#cdd8b3}
+.rm-btn-sm{height:30px;padding:0 10px;font-size:12px}
+.rm-btn-icon{width:30px;padding:0;justify-content:center}
+.rm-kbd{font-family:'Geist Mono',monospace;font-size:11px;padding:1px 6px;border:1px solid #2d3742;border-bottom-width:2px;border-radius:5px;color:#94a1ae;background:#0e1217}
+.rm-ask{display:flex;align-items:center;gap:8px;height:34px;padding:0 8px 0 11px;border:1px solid #2d3742;background:#0b0e11;border-radius:7px;color:#94a1ae}
+.rm-ask:focus-within{border-color:#b9c79a}
+.rm-ask input{flex:1;min-width:0;background:transparent;border:0;outline:0;font-size:13px;color:#dce3ea}
+.rm-ask input::placeholder{color:#7d8a97}
+.rm-pill{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:999px;border:1px solid #2d3742;background:#11151a;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em}
+.rm-pill:hover{background:#1a2027}
+.rm-menu{position:absolute;top:40px;z-index:40;min-width:220px;padding:6px;background:#161b21;border:1px solid #2d3742;border-radius:9px;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.rm-mi{display:flex;width:100%;align-items:center;justify-content:space-between;gap:14px;padding:8px 10px;border:0;background:transparent;border-radius:6px;font-size:13px;text-align:left;cursor:pointer}
+.rm-mi:hover{background:#222a33}
+.rm-vtab{height:46px;width:132px;padding:0;border:0;background:transparent;color:#94a1ae;font-size:14px;font-weight:500;cursor:pointer}
+.rm-vtab:hover{color:#dce3ea}
+.rm-vtab-on{color:#f1ece0}
+.rm-card{background:#11151a;border:1px solid #222a33;border-radius:10px;padding:16px}
+.rm-h{margin:0 0 12px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#94a1ae}
+.rm-start{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:14px 16px;background:#11151a;border:1px solid #222a33;border-radius:10px;cursor:pointer}
+.rm-start:hover{border-color:#b9c79a;background:#151b21}
+.rm-hrow{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:7px 8px;border:0;background:transparent;border-radius:6px;text-align:left;cursor:pointer}
+.rm-hrow:hover{background:#1c232b}
+.rm-tile{position:absolute;padding:1.5px;border:0;background:transparent;cursor:pointer;text-align:left}
+.rm-tile-in{display:flex;flex-direction:column;justify-content:flex-start;gap:2px;width:100%;height:100%;padding:7px 8px;border-radius:5px;overflow:hidden}
+.rm-tile:hover .rm-tile-in{filter:brightness(1.3)}
+.rm-seg{display:inline-flex;border:1px solid #2d3742;border-radius:7px;overflow:hidden}
+.rm-seg button{height:30px;padding:0 12px;border:0;background:#11151a;color:#94a1ae;font-size:12px;font-weight:500;cursor:pointer}
+.rm-seg button:hover{background:#1c232b;color:#dce3ea}
+.rm-seg button.on{background:#1d231a;color:#b9c79a;box-shadow:inset 0 0 0 1px #b9c79a}
+.rm-chip{height:30px;padding:0 11px;border:1px solid #2d3742;background:#11151a;color:#94a1ae;border-radius:999px;font-size:12px;cursor:pointer;white-space:nowrap}
+.rm-chip:hover{color:#dce3ea;border-color:#3a4654}
+.rm-chip.on{color:#b9c79a;border-color:#b9c79a;background:#1d231a}
+.rm-fnode{display:flex;flex-direction:column;gap:5px;padding:10px 12px;text-align:left;border-radius:9px;cursor:pointer;overflow:visible;transition:opacity .15s,border-color .15s,box-shadow .25s,transform .25s}
+.rm-fnode:hover{border-color:#7fb0b4 !important}
+.rm-anode{display:flex;align-items:center;justify-content:center;padding:0;border-radius:50%;cursor:pointer;transition:opacity .12s}
+.rm-anode:hover{filter:brightness(1.25)}
+.rm-cite{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #4a573b;background:#1a2016;color:#b9c79a;border-radius:5px;font-family:'Geist Mono',monospace;font-size:11.5px;cursor:pointer;white-space:nowrap}
+.rm-cite:hover{background:#262e20;border-color:#b9c79a}
+.rm-lrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;padding:6px 8px;border:0;background:transparent;border-radius:6px;text-align:left;cursor:pointer}
+.rm-lrow:hover{background:#1c232b}
+.rm-itab{flex:1;height:38px;border:0;border-bottom:2px solid transparent;background:transparent;color:#94a1ae;font-size:13px;font-weight:500;cursor:pointer}
+.rm-itab:hover{color:#dce3ea}
+.rm-itab-on{color:#f1ece0}
+.rm-resize{flex:none;width:6px;cursor:col-resize;background:#0b0e11;border-left:1px solid #222a33}
+.rm-resize:hover{background:#b9c79a}
+.rm-pal-item{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:0;background:transparent;border-radius:7px;font-size:13px;text-align:left;cursor:pointer}
+.rm-pal-item:hover,.rm-pal-first{background:#222a33}
+.rm-orow{display:flex;align-items:baseline;gap:10px;width:100%;padding:3px 8px;border:0;background:transparent;border-radius:5px;text-align:left;cursor:pointer}
+.rm-orow:hover{background:#1c232b}
+@keyframes rm-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes rm-pop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes rm-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes rm-sweep{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes rm-shimmer{from{transform:translateX(-120%)}to{transform:translateX(420%)}}
+@keyframes rm-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.5)}}
+@keyframes rm-breathe{0%,100%{opacity:.8}50%{opacity:1}}
+@keyframes rm-float{0%,100%{translate:0 0}50%{translate:0 -6px}}
+@keyframes rm-dash{to{stroke-dashoffset:-160}}
+@keyframes rm-packet{from{offset-distance:0%;opacity:0}8%{opacity:1}92%{opacity:1}to{offset-distance:100%;opacity:0}}
+@keyframes rm-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+@keyframes rm-spin{to{transform:rotate(360deg)}}
+@keyframes rm-glow{0%,100%{box-shadow:0 0 0 0 rgba(185,199,154,0)}50%{box-shadow:0 0 24px 2px rgba(185,199,154,.3)}}
+@keyframes rm-drift{to{background-position:220px 110px}}
+@keyframes rm-bob{0%,100%{translate:0 0}50%{translate:0 -10px}}
+@keyframes rm-ascend{from{transform:translateY(50px);opacity:0}15%{opacity:.85}85%{opacity:.85}to{transform:translateY(-170px);opacity:0}}
+@keyframes rm-ltbar{from{transform:scaleX(.35)}to{transform:scaleX(1)}}
+.rm-stagger>*{animation:rm-rise .8s cubic-bezier(.2,.8,.2,1) backwards}
+.rm-stagger>*:nth-child(2){animation-delay:90ms}.rm-stagger>*:nth-child(3){animation-delay:180ms}.rm-stagger>*:nth-child(4){animation-delay:270ms}.rm-stagger>*:nth-child(5){animation-delay:360ms}.rm-stagger>*:nth-child(6){animation-delay:450ms}.rm-stagger>*:nth-child(7){animation-delay:540ms}.rm-stagger>*:nth-child(n+8){animation-delay:630ms}
+.rm-stagger2>*{animation:rm-rise .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:380ms}
+.rm-stagger2>*:nth-child(2){animation-delay:440ms}.rm-stagger2>*:nth-child(3){animation-delay:500ms}.rm-stagger2>*:nth-child(4){animation-delay:560ms}.rm-stagger2>*:nth-child(5){animation-delay:620ms}.rm-stagger2>*:nth-child(6){animation-delay:680ms}.rm-stagger2>*:nth-child(7){animation-delay:740ms}.rm-stagger2>*:nth-child(n+8){animation-delay:800ms}
+.rm-hrow{animation:rm-rise .5s cubic-bezier(.2,.8,.2,1) backwards}
+.rm-hrow:nth-child(2){animation-delay:720ms}.rm-hrow:nth-child(3){animation-delay:790ms}.rm-hrow:nth-child(4){animation-delay:860ms}.rm-hrow:nth-child(5){animation-delay:930ms}.rm-hrow:nth-child(6){animation-delay:1000ms}
+.rm-sweep{position:relative;overflow:hidden}
+.rm-sweep::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent 0,#b9c79a 35%,#7fb0b4 65%,transparent 100%);background-size:200% 100%;opacity:.75;animation:rm-sweep 5s linear infinite}
+.rm-shimmer{position:relative;overflow:hidden}
+.rm-shimmer::after{content:"";position:absolute;top:0;bottom:0;left:0;width:25%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:rm-shimmer 3.4s ease-in-out infinite}
+.rm-live{display:inline-block;flex:none;width:7px;height:7px;border-radius:50%;background:#8fb996;animation:rm-pulse 2s ease-in-out infinite}
+.rm-nudge{display:inline-block;animation:rm-nudge 1.6s ease-in-out infinite}
+.rm-flowline{animation:rm-dash 4s linear infinite}
+.rm-drift{animation:rm-drift 70s linear infinite}
+.rm-gate{position:absolute;left:0;top:0;right:0;bottom:0;z-index:90;background:#07090c;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:opacity .6s ease}
+.rm-gate[data-s="fading"]{opacity:0;pointer-events:none}
+.rm-gate-bg{position:absolute;left:0;top:0;right:0;bottom:0;background-image:radial-gradient(#1d262e 1px,transparent 1px);background-size:26px 26px}
+.rm-glyph{position:absolute;font-size:12px;color:#66737f;white-space:nowrap;pointer-events:none;animation:rm-ascend linear infinite}
+.rm-skip{position:absolute;top:16px;right:16px;z-index:5}
+.rm-gate-col{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:30px;width:100%;padding:20px 16px}
+.rm-gate-title{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:opacity .4s ease,transform .5s ease}
+.rm-choices{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;transition:opacity .4s ease,transform .5s ease}
+.rm-gate[data-s="opening"] .rm-gate-title{opacity:0}
+.rm-gate[data-s="opening"] .rm-gate-title{transform:translateY(-14px)}
+.rm-choice{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:172px;padding:12px 14px;background:#11151a;border:1px solid #2d3742;border-radius:10px;cursor:pointer;text-align:left;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.rm-choice:hover,.rm-choice:focus-visible{transform:translateY(-4px);border-color:#b9c79a;background:#171d23}
+.rm-env-tilt{width:min(440px,84vw);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.rm-env{position:relative;width:100%;aspect-ratio:3/2;perspective:1100px;animation:rm-bob 5s ease-in-out infinite;transition:transform .25s ease-out}
+.rm-glyphs{position:absolute;left:-30px;top:-30px;right:-30px;bottom:-30px;transition:transform .35s ease-out}
+.rm-gate[data-s="opening"] .rm-env,.rm-gate[data-s="fading"] .rm-env{animation-play-state:paused}
+.rm-env-shadow{position:absolute;left:8%;right:8%;bottom:-28px;height:22px;border-radius:50%;background:rgba(0,0,0,.65);filter:blur(14px)}
+.rm-env-back{position:absolute;inset:0;border-radius:8px;background:linear-gradient(160deg,#1f2831,#141a20);border:1px solid #33404c}
+.rm-letter-rise{position:absolute;left:5%;bottom:5%;width:90%;height:90%;z-index:2;transition:transform .9s cubic-bezier(.2,.9,.25,1) 1.5s,z-index 0s linear 2.4s}
+.rm-letter{width:100%;height:100%;background:#0e1217;border:1px solid #46525f;border-radius:6px;box-shadow:0 -6px 24px rgba(0,0,0,.4);transform-origin:50% 50%;transition:transform 1s cubic-bezier(.6,0,.2,1) 2.4s}
+.rm-gate[data-s="opening"] .rm-letter-rise,.rm-gate[data-s="fading"] .rm-letter-rise{transform:translateY(-66%);z-index:30}
+.rm-gate[data-s="opening"] .rm-letter,.rm-gate[data-s="fading"] .rm-letter{transform:scale(6)}
+.rm-pk{position:absolute;inset:0;border-radius:8px;z-index:3}
+.rm-pk-l{background:linear-gradient(120deg,#26313b,#1b232b);clip-path:polygon(0 0,50% 56%,0 100%)}
+.rm-pk-r{background:linear-gradient(240deg,#26313b,#1b232b);clip-path:polygon(100% 0,50% 56%,100% 100%)}
+.rm-pk-b{background:linear-gradient(180deg,#2c3843,#1e2730);clip-path:polygon(0 100%,50% 56%,100% 100%)}
+.rm-seams{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+.rm-flap{position:absolute;left:0;top:0;width:100%;height:56%;z-index:5;transform-origin:50% 0;background:linear-gradient(180deg,#34414d,#27323c);clip-path:polygon(0 0,100% 0,50% 100%);transition:transform .75s cubic-bezier(.5,0,.2,1) .8s,z-index 0s linear 1.15s,background .01s linear 1.15s}
+.rm-gate[data-s="opening"] .rm-flap,.rm-gate[data-s="fading"] .rm-flap{transform:rotateX(180deg);z-index:1;background:linear-gradient(180deg,#161c22,#1d252d)}
+.rm-seal{position:absolute;left:50%;top:56%;width:15%;aspect-ratio:1;margin:-7.5% 0 0 -7.5%;z-index:7;border-radius:50%;background:radial-gradient(circle at 35% 30%,#dfe7c8,#b9c79a 55%,#8a9c6c);display:flex;align-items:center;justify-content:center;animation:rm-glow 2.8s ease-in-out infinite;transition:transform .35s ease .55s,opacity .35s ease .55s}
+.rm-gate[data-s="opening"] .rm-seal,.rm-gate[data-s="fading"] .rm-seal{transform:scale(1.6);opacity:0}
+.rm-addr{position:absolute;left:50%;bottom:8%;z-index:6;display:flex;flex-direction:column;align-items:center;gap:2px;max-width:34%;transform:translateX(-50%);transition:opacity .3s ease}
+.rm-stamp{position:absolute;right:5.5%;top:44%;width:13%;aspect-ratio:1;z-index:6;border:1.5px dashed #5b6773;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:rm-spin 18s linear infinite;transition:opacity .3s ease}
+.rm-gate[data-s="opening"] .rm-addr,.rm-gate[data-s="opening"] .rm-stamp,.rm-gate[data-s="fading"] .rm-addr,.rm-gate[data-s="fading"] .rm-stamp{opacity:0}
+.rm-lt-bar{transform-origin:left center;animation:rm-ltbar 2.2s ease-in-out infinite alternate}
+@media (prefers-reduced-motion: reduce){
+  .rm *,.rm-gate,.rm-gate *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;transition-delay:0s !important}
+}
+.rm-wait header,.rm-wait header *,.rm-wait nav,.rm-wait nav *,.rm-wait .rm-body,.rm-wait .rm-body *{animation-play-state:paused !important}
+@keyframes rm-draw{from{stroke-dashoffset:3000}to{stroke-dashoffset:2200}}
+@keyframes rm-fadein{from{opacity:0}}
+@keyframes rm-wordrise{from{opacity:0;transform:translateY(55%) rotate(2.5deg);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes rm-ring{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.9);opacity:0}}
+@keyframes rm-view{from{opacity:0;transform:translateY(12px) scale(.995);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+@keyframes rm-scan{from{top:-6%}to{top:104%}}
+@keyframes rm-tick{from{transform:scaleY(0)}}
+.rm-serif{font-family:'Instrument Serif','Times New Roman',serif}
+.rm-view{animation:rm-view .6s cubic-bezier(.2,.8,.2,1) backwards}
+.rm-tiltcard{transition:transform .3s ease-out,border-color .2s ease,background .2s ease;will-change:transform}
+.rm-find{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 16px;background:#0e1217;border:1px solid #222a33;border-radius:12px;text-align:left;cursor:pointer;transition:border-color .2s ease,transform .25s ease,background .2s ease}
+.rm-find:hover{border-color:#b9c79a;transform:translateY(-3px);background:#12171c}
+.rm-ring{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:50%;border:2px solid #7fb0b4;pointer-events:none;animation:rm-ring 1.5s ease-out infinite}
+.rm-orbit{position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;border:1.5px dashed #b9c79a;pointer-events:none;animation:rm-spin 9s linear infinite}
+.rm-scanbeam{position:absolute;left:0;right:0;height:90px;z-index:6;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(185,199,154,.14),transparent);border-bottom:1px solid rgba(185,199,154,.5);animation:rm-scan 1.6s linear infinite}
+.rm-mini{position:absolute;right:16px;bottom:16px;z-index:6;padding:8px;background:rgba(14,18,23,.92);border:1px solid #2d3742;border-radius:9px;cursor:pointer}
+@media (max-width: 900px){
+  .rm-root{height:auto !important;min-height:100vh;overflow:visible !important}
+  .rm-body{flex-direction:column !important}
+  .rm-main{overflow:visible !important}
+  .rm-insp{width:auto !important;height:460px;border-left:0 !important;border-top:1px solid #222a33}
+  .rm-resize{display:none}
+  .rm-statusline{display:none !important}
+}
+</style>
+</helmet>
+
+<div id="rm-root" class="{{rootCls}}" tabindex="-1" onKeyDown="{{onKey}}" onMouseMove="{{onMove}}" style="position:relative; height:100vh; min-height:640px; display:flex; flex-direction:column; overflow:hidden; background:#0b0e11; outline:none">
+
+  <div aria-hidden="true" style="{{spotStyle}}"></div>
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:relative; z-index:30; display:flex; align-items:center; flex-wrap:wrap; gap:10px 12px; padding:9px 16px; background:#0e1217; border-bottom:1px solid #222a33">
+    <div style="display:flex; align-items:center; gap:9px; margin-right:4px">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="0.75" y="0.75" width="24.5" height="24.5" rx="6" stroke="#2d3742" stroke-width="1.5"></rect><path d="M7 17.5L13 8.5L19 17.5" stroke="#7fb0b4" stroke-width="1.5" stroke-linejoin="round"></path><circle cx="13" cy="8.5" r="2.4" fill="#b9c79a"></circle><circle cx="7" cy="17.5" r="2" fill="#0e1217" stroke="#7fb0b4" stroke-width="1.5"></circle><circle cx="19" cy="17.5" r="2" fill="#0e1217" stroke="#7fb0b4" stroke-width="1.5" stroke-dasharray="2 1.6" style="transform-box:fill-box;transform-origin:center;animation:rm-spin 3s linear infinite"></circle></svg>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-0.01em">RepoMind</span>
+    </div>
+
+    <div style="position:relative">
+      <button class="rm-btn" onClick="{{toggleRepo}}" aria-haspopup="menu" aria-expanded="{{repoOpen}}">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M1.75 4.25a1 1 0 0 1 1-1h3l1.5 1.75h6a1 1 0 0 1 1 1v6.25a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1z"></path></svg>
+        <span class="mono" style="font-size:12.5px">{{repoName}}</span>
+        <span class="mono" style="font-size:11px; color:#94a1ae">main</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#94a1ae" stroke-width="1.75" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg>
+      </button>
+      <sc-if value="{{repoOpen}}" hint-placeholder-val="{{ false }}">
+        <div class="rm-menu" role="menu" style="left:0; min-width:290px">
+          <div class="rm-h" style="margin:6px 10px 6px">Recent projects</div>
+          <sc-for list="{{repos}}" as="r" hint-placeholder-count="3">
+            <button class="rm-mi" role="menuitem" onClick="{{r.click}}"><span class="mono" style="font-size:12.5px">{{r.name}}</span><span style="font-size:12px; color:#94a1ae">{{r.meta}}</span></button>
+          </sc-for>
+          <div style="height:1px; background:#2d3742; margin:6px 0"></div>
+          <button class="rm-mi" role="menuitem" onClick="{{replayGate}}"><span>Back to the envelope</span><span class="rm-kbd">intro</span></button>
+          <button class="rm-mi" role="menuitem" onClick="{{openFolder}}"><span>Open folder…</span><span class="rm-kbd">Ctrl O</span></button>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px">
+      <button class="rm-btn rm-btn-primary" onClick="{{startIndex}}" aria-label="Index project">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"></path><path d="M13.75 2.5v2.75h-2.75"></path></svg>
+        <span>{{indexLabel}}</span>
+      </button>
+    </div>
+
+    <div style="position:relative; flex:1 1 300px; min-width:240px; max-width:700px">
+      <label for="rm-ask" class="sr">Ask the codebase</label>
+      <div class="rm-ask">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.75"></circle><path d="M10.6 10.6L14 14"></path></svg>
+        <input id="rm-ask" type="text" autocomplete="off" spellcheck="false" placeholder="Ask the codebase: where are tokens validated?" value="{{query}}" onChange="{{onQuery}}" onKeyDown="{{onAskKey}}" onFocus="{{onAskFocus}}">
+        <span class="rm-kbd" aria-hidden="true">/</span>
+      </div>
+      <sc-if value="{{askOpen}}" hint-placeholder-val="{{ false }}">
+        <div class="rm-menu rm-scroll" style="left:0; right:0; top:40px; max-height:440px; overflow:auto; padding:12px 14px" role="region" aria-label="Answer">
+          <sc-if value="{{showAnswer}}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div class="rm-h" style="margin-bottom:6px">Question</div>
+              <div style="font-size:14px; font-weight:500; margin-bottom:12px">{{ansQ}}</div>
+              <div style="display:flex; flex-direction:column; gap:12px">
+                <sc-for list="{{ansLines}}" as="a" hint-placeholder-count="2">
+                  <div style="display:flex; flex-direction:column; gap:6px">
+                    <div style="font-size:13px; line-height:1.55"><sc-for list="{{a.parts}}" as="p"><span style="{{p.s}}">{{p.t}}</span></sc-for></div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px"><sc-for list="{{a.cites}}" as="c"><button class="rm-cite" onClick="{{c.click}}">{{c.label}}</button></sc-for></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:14px; padding-top:10px; border-top:1px solid #2d3742; font-size:12px; color:#94a1ae">{{ansFoot}}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{showMatches}}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div class="rm-h" style="margin-bottom:6px">Matching symbols · press Enter to ask</div>
+              <sc-for list="{{matches}}" as="m" hint-placeholder-count="3">
+                <button class="rm-lrow" onClick="{{m.click}}"><span class="mono" style="font-size:12.5px">{{m.name}}</span><span class="mono" style="font-size:11.5px; color:#94a1ae">{{m.meta}}</span></button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{showTry}}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div class="rm-h" style="margin-bottom:6px">Try asking</div>
+              <sc-for list="{{tries}}" as="t" hint-placeholder-count="4">
+                <button class="rm-lrow" onClick="{{t.click}}"><span>{{t.label}}</span></button>
+              </sc-for>
+              <div style="margin-top:8px; font-size:12px; color:#94a1ae">Answers come from the static index and cite file:line. No model call needed.</div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <button class="rm-btn" onClick="{{openPalette}}" aria-label="Open command palette">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 3.25h-.5a1.75 1.75 0 1 0 1.75 1.75V3.25zm0 0h6m-6 0v9.5m6-9.5h.5A1.75 1.75 0 1 1 9.75 5V3.25zm0 0v9.5m-4.5 0H4.5A1.75 1.75 0 1 0 6.25 11v1.75zm0 0h4.5m0 0h.75A1.75 1.75 0 1 0 9.75 11v1.75z"></path></svg>
+      <span class="rm-kbd">Ctrl/⌘ K</span>
+    </button>
+
+    <div style="position:relative">
+      <button class="rm-btn" onClick="{{toggleExport}}" aria-haspopup="menu" aria-expanded="{{exportOpen}}">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v7.75M4.75 7.5L8 10.5l3.25-3M2.75 12.75h10.5"></path></svg>
+        <span>Export</span>
+      </button>
+      <sc-if value="{{exportOpen}}" hint-placeholder-val="{{ false }}">
+        <div class="rm-menu" role="menu" style="right:0; min-width:250px">
+          <sc-for list="{{exportItems}}" as="x" hint-placeholder-count="4">
+            <button class="rm-mi" role="menuitem" onClick="{{x.click}}"><span>{{x.label}}</span><span class="mono" style="font-size:11.5px; color:#94a1ae">{{x.ext}}</span></button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <button class="rm-pill" onClick="{{toggleAI}}" aria-pressed="{{aiOn}}" title="Toggle AI. With AI off, every answer comes from the static index.">
+      <span style="{{aiDotStyle}}"></span>
+      <span style="{{aiTextStyle}}">{{aiLabel}}</span>
+    </button>
+
+    <sc-if value="{{indexing}}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:0; right:0; bottom:-1px; height:2px; background:#222a33"><div style="{{indexBarStyle}}"></div></div>
+    </sc-if>
+  </header>
+
+  <!-- ===== VIEW SWITCHER ===== -->
+  <nav aria-label="Views" style="position:relative; display:flex; align-items:flex-end; gap:2px; padding:0 12px; background:#0e1217; border-bottom:1px solid #222a33">
+    <div aria-hidden="true" style="{{tabInd}}"></div>
+    <sc-for list="{{viewTabs}}" as="v" hint-placeholder-count="3">
+      <button class="{{v.cls}}" onClick="{{v.click}}" aria-current="{{v.current}}">{{v.label}}</button>
+    </sc-for>
+    <span style="flex:1"></span>
+    <span class="mono rm-statusline" style="align-self:center; display:inline-flex; align-items:center; gap:8px; font-size:11.5px; color:#94a1ae"><span class="rm-live"></span>{{statusLine}}</span>
+  </nav><div class="rm-body" style="flex:1; min-height:0; display:flex">
+
+    <main class="rm-main rm-scroll" style="position:relative; flex:1; min-width:0; overflow:auto; background:#0b0e11">
+      <sc-if value="{{indexing}}" hint-placeholder-val="{{ false }}"><div class="rm-scanbeam" aria-hidden="true"></div></sc-if>
+
+      <!-- ---------- OVERVIEW ---------- -->
+      <sc-if value="{{viewOverview}}" hint-placeholder-val="{{ true }}">
+        <div class="rm-stagger" style="display:flex; flex-direction:column; gap:18px; padding:20px; max-width:1500px">
+
+          <section aria-label="Repo briefing" style="order:0; display:flex; flex-direction:column; gap:16px; padding:26px 4px 22px">
+            <div style="display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 14px">
+              <span class="mono" style="font-size:11px; letter-spacing:.14em; color:#b9c79a">~/ briefing</span>
+              <span class="mono" style="font-size:12px; letter-spacing:.06em; color:#dce3ea">{{repoName}}</span>
+              <span class="mono" style="font-size:12px; color:#94a1ae">main · 214 files indexed in 3.2 s</span>
+            </div>
+            <h1 class="rm-serif" style="margin:6px 0 0; max-width:1100px; font-weight:400; font-size:clamp(40px, 6.6vw, 92px); line-height:.98; letter-spacing:-0.03em; color:#f1ece0">
+              <sc-for list="{{heroWords}}" as="w" hint-placeholder-count="10"><span style="{{w.style}}">{{w.t}}</span></sc-for>
+            </h1>
+            <p style="margin:0; max-width:560px; font-size:15px; line-height:1.55; color:#94a1ae">Scanned 214 files in 3.2 seconds, entirely on this machine. Start with one of these, or ask a question in the search box.</p>
+            <div class="rm-stagger2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(300px,100%), 1fr)); gap:10px; margin-top:6px">
+              <sc-for list="{{findings}}" as="f" hint-placeholder-count="3">
+                <button class="rm-find" onClick="{{f.click}}">
+                  <span class="mono" style="{{f.tagStyle}}">{{f.tag}}</span>
+                  <span style="font-size:14px; line-height:1.4; color:#dce3ea">{{f.text}} <span class="rm-nudge" style="color:#b9c79a">→</span></span>
+                </button>
+              </sc-for>
+            </div>
+            <div class="rm-shimmer" style="height:2px; background:#1e252d; border-radius:2px; margin-top:6px"></div>
+          </section>
+
+          <div style="order:1; display:flex; align-items:center; gap:14px; margin-top:8px"><span class="mono" style="font-size:11px; color:#b9c79a">01</span><span class="rm-serif" style="font-size:30px; line-height:1; color:#f1ece0">Begin here</span><span style="flex:1; height:1px; background:linear-gradient(90deg,#2d3742,transparent)"></span></div>
+          <div style="order:3; display:flex; align-items:center; gap:14px; margin-top:14px"><span class="mono" style="font-size:11px; color:#b9c79a">02</span><span class="rm-serif" style="font-size:30px; line-height:1; color:#f1ece0">The shape of it</span><span style="flex:1; height:1px; background:linear-gradient(90deg,#2d3742,transparent)"></span></div>
+          <div style="order:6; display:flex; align-items:center; gap:14px; margin-top:14px"><span class="mono" style="font-size:11px; color:#b9c79a">03</span><span class="rm-serif" style="font-size:30px; line-height:1; color:#f1ece0">Where the risk lives</span><span style="flex:1; height:1px; background:linear-gradient(90deg,#2d3742,transparent)"></span></div>
+          <div style="order:9; display:flex; align-items:center; gap:14px; margin-top:14px"><span class="mono" style="font-size:11px; color:#b9c79a">04</span><span class="rm-serif" style="font-size:30px; line-height:1; color:#f1ece0">Guards and dependencies</span><span style="flex:1; height:1px; background:linear-gradient(90deg,#2d3742,transparent)"></span></div>
+
+          <section aria-label="Totals" class="rm-stagger2" style="order:4; display:grid; grid-template-columns:repeat(auto-fit, minmax(min(170px,100%), 1fr)); gap:12px">
+            <sc-for list="{{stats}}" as="s" hint-placeholder-count="5">
+              <div class="rm-card rm-sweep" style="padding:14px 16px; display:flex; flex-direction:column; gap:4px">
+                <span class="rm-h" style="margin:0">{{s.label}}</span>
+                <span class="rm-serif" style="font-size:50px; line-height:1; font-weight:400; letter-spacing:-0.02em; color:#f1ece0; font-variant-numeric:tabular-nums">{{s.value}}</span>
+                <span style="font-size:12px; color:#94a1ae">{{s.sub}}</span>
+              </div>
+            </sc-for>
+          </section>
+
+          <section aria-label="Start here" style="order:2">
+            <h2 class="sr">Start here</h2>
+            <div class="rm-stagger2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(250px,100%), 1fr)); gap:12px">
+              <sc-for list="{{startCards}}" as="c" hint-placeholder-count="4">
+                <button class="rm-start rm-tiltcard" onClick="{{c.click}}" onMouseMove="{{c.move}}" onMouseLeave="{{c.leave}}">
+                  <span class="mono" style="font-size:12px; color:#b9c79a; font-weight:500">{{c.tag}}</span>
+                  <span style="font-size:14px; font-weight:600">{{c.title}}</span>
+                  <span style="font-size:12.5px; color:#94a1ae">{{c.desc}}</span>
+                  <span style="margin-top:4px; font-size:12px; color:#7fb0b4; font-weight:500">Open call flow <span class="rm-nudge">→</span></span>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+
+          <div class="rm-stagger2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(380px,100%), 1fr)); gap:12px; order:5">
+            <section class="rm-card" aria-label="Language mix">
+              <h2 class="rm-h">Language mix</h2>
+              <div class="rm-shimmer" style="display:flex; gap:2px; height:14px; border-radius:4px; overflow:hidden"><sc-for list="{{langSegs}}" as="l"><div style="{{l.style}}" title="{{l.title}}"></div></sc-for></div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:8px 16px; margin-top:14px">
+                <sc-for list="{{langLegend}}" as="l" hint-placeholder-count="4">
+                  <div style="display:flex; align-items:center; gap:8px">
+                    <span style="{{l.dot}}"></span>
+                    <span style="font-weight:500">{{l.name}}</span>
+                    <span class="mono" style="margin-left:auto; font-size:12px; color:#94a1ae">{{l.pct}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:10px; font-size:12px; color:#94a1ae">{{langNote}}</div>
+            </section>
+
+            <section class="rm-card" aria-label="Auth surface">
+              <h2 class="rm-h">Auth surface · {{endpointCount}} endpoints</h2>
+              <div class="rm-shimmer" style="display:flex; gap:2px; height:14px; border-radius:4px; overflow:hidden"><sc-for list="{{authSegs}}" as="a"><div style="{{a.style}}" title="{{a.title}}"></div></sc-for></div>
+              <div style="display:flex; flex-direction:column; gap:9px; margin-top:14px">
+                <sc-for list="{{authRows}}" as="a" hint-placeholder-count="3">
+                  <div style="display:grid; grid-template-columns:12px 112px minmax(0,1fr) auto; align-items:baseline; gap:8px">
+                    <span style="{{a.dot}}"></span>
+                    <span style="font-weight:500">{{a.name}}</span>
+                    <span style="font-size:12px; color:#94a1ae">{{a.desc}}</span>
+                    <span class="mono" style="font-size:12.5px">{{a.count}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </div>
+
+          <section class="rm-card" aria-label="File treemap" style="order:7">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px">
+              <h2 class="rm-h" style="margin:0">Risk map · size is lines of code, heat is complexity</h2>
+              <span style="font-size:12px; color:#94a1ae">{{tmNote}}</span>
+            </div>
+            <div style="position:relative; height:340px; border-radius:7px; overflow:hidden; background:#0b0e11">
+              <sc-for list="{{tiles}}" as="t" hint-placeholder-count="8">
+                <button class="rm-tile" style="{{t.style}}" onClick="{{t.click}}" onMouseEnter="{{t.enter}}" onMouseLeave="{{t.leave}}" onFocus="{{t.enter}}" onBlur="{{t.leave}}" aria-label="{{t.title}}">
+                  <div class="rm-tile-in" style="{{t.inStyle}}">
+                    <sc-if value="{{t.label}}" hint-placeholder-val="{{ true }}">
+                      <span class="mono" style="font-size:12px; font-weight:500; color:#eaf1f5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{t.name}}</span>
+                      <span class="mono" style="font-size:11px; color:#b4c5cd">{{t.sub}}</span>
+                    </sc-if>
+                  </div>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:10px; font-size:12px; color:#94a1ae">
+              <span class="mono" style="color:#dce3ea; min-height:18px">{{tmRead}}</span><span style="flex:1"></span><span>cool</span><span style="width:120px; height:8px; border-radius:4px; background:linear-gradient(90deg,#26414f,#b5693a,#d98a62)"></span><span>hot: highest complexity in the file</span>
+            </div>
+          </section>
+
+          <section aria-label="Hotspots" class="rm-stagger2" style="order:8; display:grid; grid-template-columns:repeat(auto-fit, minmax(min(300px,100%), 1fr)); gap:12px">
+            <sc-for list="{{hotCols}}" as="h" hint-placeholder-count="3">
+              <div class="rm-card" style="padding:14px 10px 10px">
+                <h2 class="rm-h" style="padding:0 8px">{{h.title}}</h2>
+                <sc-for list="{{h.rows}}" as="r">
+                  <button class="rm-hrow" onClick="{{r.click}}">
+                    <span class="mono" style="font-size:11.5px; color:#7d8a97">{{r.rank}}</span>
+                    <span style="min-width:0; display:flex; flex-direction:column">
+                      <span class="mono" style="font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{r.name}}</span>
+                      <span class="mono" style="font-size:11px; color:#94a1ae; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{r.where}}</span>
+                    </span>
+                    <span class="mono" style="font-size:13px; font-weight:500; color:#f1ece0">{{r.metric}}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </section>
+
+          <div class="rm-stagger2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(380px,100%), 1fr)); gap:12px; order:10">
+            <section class="rm-card" aria-label="Auth guard functions" style="padding:14px 10px 10px">
+              <h2 class="rm-h" style="padding:0 8px">Auth guard functions</h2>
+              <sc-for list="{{guards}}" as="g" hint-placeholder-count="4">
+                <button class="rm-lrow" style="align-items:flex-start" onClick="{{g.click}}">
+                  <span style="display:flex; flex-direction:column; gap:1px; min-width:0">
+                    <span class="mono" style="font-size:12.5px">{{g.name}}</span>
+                    <span style="font-size:12px; color:#94a1ae">{{g.note}}</span>
+                    <span class="mono" style="font-size:11px; color:#7d8a97">{{g.where}}</span>
+                  </span>
+                  <span class="mono" style="font-size:11.5px; color:#7fb0b4; white-space:nowrap">{{g.used}}</span>
+                </button>
+              </sc-for>
+            </section>
+            <section class="rm-card" aria-label="Third-party libraries">
+              <h2 class="rm-h">Third-party libraries · by import count</h2>
+              <div style="display:flex; flex-direction:column; gap:7px">
+                <sc-for list="{{libs}}" as="l" hint-placeholder-count="6">
+                  <div style="display:grid; grid-template-columns:150px minmax(0,1fr) 34px; align-items:center; gap:10px">
+                    <span class="mono" style="font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{l.name}}</span>
+                    <span style="height:8px; background:#1a2027; border-radius:3px"><span style="{{l.bar}}"></span></span>
+                    <span class="mono" style="font-size:12px; text-align:right; color:#94a1ae">{{l.count}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ---------- ARCHITECTURE ---------- -->
+      <sc-if value="{{viewArch}}" hint-placeholder-val="{{ false }}">
+        <div class="rm-view" style="position:relative; display:flex; flex-direction:column; height:100%">
+          <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; padding:12px 20px; border-bottom:1px solid #222a33; background:#0e1217">
+            <div style="display:flex; align-items:center; gap:6px" aria-label="Breadcrumb">
+              <sc-for list="{{crumbs}}" as="c">
+                <button class="rm-chip" style="{{c.style}}" onClick="{{c.click}}">{{c.label}}</button>
+              </sc-for>
+            </div>
+            <span style="font-size:12.5px; color:#94a1ae">{{archHint}}</span>
+            <span style="flex:1"></span>
+            <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:#94a1ae"><span style="width:12px; height:12px; border-radius:50%; background:#16292d; border:1.5px solid #4f8388"></span>Python</span>
+            <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:#94a1ae"><span style="width:12px; height:12px; border-radius:50%; background:#231f45; border:1.5px solid #7f78a8"></span>TypeScript / JS</span>
+            <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:#94a1ae"><span style="width:12px; height:12px; border-radius:50%; border:1.5px dashed #7d8a97"></span>Outside this folder</span>
+          </div>
+          <div class="rm-scroll rm-drift" style="flex:1; min-height:0; overflow:auto; background-image:radial-gradient(#1b222a 1px, transparent 1px); background-size:22px 22px">
+            <div style="position:relative; width:1040px; height:760px; margin:0 auto">
+              <sc-for list="{{archEdges}}" as="e" hint-placeholder-count="0">
+                <div style="position:absolute; left:0; top:0; width:0; height:0; overflow:visible; pointer-events:none">
+                  <svg style="position:absolute; left:0; top:0; width:1040px; height:760px; overflow:visible" aria-hidden="true"><path d="{{e.d}}" fill="none" style="{{e.baseStyle}}"></path><path d="{{e.d}}" fill="none" style="{{e.pathStyle}}"></path><path d="{{e.head}}" style="{{e.headStyle}}"></path></svg>
+                  <div style="{{e.packet}}"></div>
+                  <sc-if value="{{e.chip}}" hint-placeholder-val="{{ false }}"><div class="mono" style="{{e.chipStyle}}">{{e.chip}}</div></sc-if>
+                </div>
+              </sc-for>
+              <sc-for list="{{archNodes}}" as="n" hint-placeholder-count="0">
+                <div style="{{n.wrapStyle}}">
+                  <button class="rm-anode" style="{{n.style}}" onClick="{{n.click}}" onDoubleClick="{{n.dbl}}" onMouseEnter="{{n.enter}}" onMouseLeave="{{n.leave}}" onFocus="{{n.enter}}" onBlur="{{n.leave}}" aria-label="{{n.aria}}">
+                    <sc-if value="{{n.hot}}" hint-placeholder-val="{{ false }}"><span class="rm-ring" aria-hidden="true"></span></sc-if>
+                    <sc-if value="{{n.selected}}" hint-placeholder-val="{{ false }}"><span class="rm-orbit" aria-hidden="true"></span></sc-if>
+                    <sc-if value="{{n.inner}}" hint-placeholder-val="{{ false }}"><span class="mono" style="font-size:12px; font-weight:500; color:#eaf1f5">{{n.inner}}</span></sc-if>
+                  </button>
+                  <div class="mono" style="{{n.labelStyle}}">{{n.title}}</div>
+                  <div style="{{n.subStyle}}">{{n.sub}}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ---------- CALL FLOW ---------- -->
+      <sc-if value="{{viewFlow}}" hint-placeholder-val="{{ false }}">
+        <div class="rm-view" style="position:relative; display:flex; flex-direction:column; height:100%">
+          <div style="display:flex; flex-direction:column; gap:10px; padding:12px 20px; border-bottom:1px solid #222a33; background:#0e1217">
+            <div style="display:flex; flex-wrap:wrap; gap:6px" role="group" aria-label="Flow root">
+              <sc-for list="{{flowRoots}}" as="r" hint-placeholder-count="5">
+                <button class="{{r.cls}}" onClick="{{r.click}}"><span class="mono" style="font-size:11.5px">{{r.label}}</span></button>
+              </sc-for>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px">
+              <div class="rm-seg" role="group" aria-label="Direction">
+                <sc-for list="{{modeBtns}}" as="m"><button class="{{m.cls}}" onClick="{{m.click}}" aria-pressed="{{m.on}}">{{m.label}}</button></sc-for>
+              </div>
+              <div style="display:inline-flex; align-items:center; gap:8px">
+                <span style="font-size:12px; color:#94a1ae">Depth</span>
+                <button class="rm-btn rm-btn-sm rm-btn-icon" onClick="{{depthDec}}" disabled="{{decDisabled}}" aria-label="Decrease depth">−</button>
+                <span class="mono" style="min-width:14px; text-align:center; font-size:13px; font-weight:500">{{depthVal}}</span>
+                <button class="rm-btn rm-btn-sm rm-btn-icon" onClick="{{depthInc}}" disabled="{{incDisabled}}" aria-label="Increase depth">+</button>
+              </div>
+              <button class="{{outlineCls}}" onClick="{{toggleOutline}}" aria-pressed="{{outlineOn}}" aria-label="Toggle text outline" title="Toggle text outline">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"></path><circle cx="2.4" cy="4" r=".6" fill="currentColor"></circle><circle cx="2.4" cy="8" r=".6" fill="currentColor"></circle><circle cx="2.4" cy="12" r=".6" fill="currentColor"></circle></svg>
+              </button>
+              <span style="flex:1"></span>
+              <span style="font-size:12px; color:#94a1ae">{{flowInfo}}</span>
+              <span style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:#94a1ae"><span style="width:22px; height:12px; border-radius:3px; border:1.5px dashed #94a1ae"></span>Unresolved external call</span>
+              <div style="display:inline-flex; align-items:center; gap:6px">
+                <button class="rm-btn rm-btn-sm" onClick="{{zoomFit}}" aria-label="Fit graph to view">Fit</button>
+                <button class="rm-btn rm-btn-sm rm-btn-icon" onClick="{{zoomOut}}" aria-label="Zoom out">−</button>
+                <span class="mono" style="min-width:40px; text-align:center; font-size:12px; color:#94a1ae">{{zoomVal}}</span>
+                <button class="rm-btn rm-btn-sm rm-btn-icon" onClick="{{zoomIn}}" aria-label="Zoom in">+</button>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{outlineOn}}" hint-placeholder-val="{{ false }}">
+            <div class="rm-scroll" style="flex:1; overflow:auto; padding:18px 24px; background:#0b0e11">
+              <div style="max-width:880px; display:flex; flex-direction:column">
+                <sc-for list="{{outlineRows}}" as="o" hint-placeholder-count="6">
+                  <sc-if value="{{o.isHead}}" hint-placeholder-val="{{ false }}"><div class="rm-h" style="margin:14px 8px 6px">{{o.text}}</div></sc-if>
+                  <sc-if value="{{o.isRow}}" hint-placeholder-val="{{ true }}">
+                    <button class="rm-orow" style="{{o.style}}" onClick="{{o.click}}">
+                      <span class="mono" style="{{o.nameStyle}}">{{o.text}}</span>
+                      <span class="mono" style="font-size:11.5px; color:#94a1ae">{{o.where}}</span>
+                      <span class="mono" style="margin-left:auto; font-size:11.5px; color:#94a1ae">{{o.meta}}</span>
+                    </button>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{graphOn}}" hint-placeholder-val="{{ false }}">
+            <div class="rm-mini" onClick="{{mmClick}}" role="img" aria-label="Minimap of the call graph. Click to jump." title="Click to jump">
+              <div style="{{mmBox}}">
+                <sc-for list="{{mmNodes}}" as="m"><div style="{{m.style}}"></div></sc-for>
+                <div id="rm-vp" style="{{mmVp}}"></div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{graphOn}}" hint-placeholder-val="{{ true }}">
+            <div id="rm-flow-scroll" class="rm-scroll rm-drift" onMouseDown="{{panStart}}" onScroll="{{onFlowScroll}}" style="flex:1; min-height:0; cursor:grab; overflow:auto; background-color:#0b0e11; background-image:radial-gradient(#1b222a 1px, transparent 1px); background-size:22px 22px">
+              <div style="{{stageStyle}}">
+                <div style="{{innerStyle}}">
+                  <sc-for list="{{flowEdges}}" as="e" hint-placeholder-count="0">
+                    <div style="position:absolute; left:0; top:0; width:0; height:0; overflow:visible; pointer-events:none">
+                      <svg style="{{e.svgStyle}}" aria-hidden="true"><path d="{{e.d}}" fill="none" style="{{e.baseStyle}}"></path><path d="{{e.d}}" fill="none" style="{{e.pathStyle}}"></path><path d="{{e.head}}" style="{{e.headStyle}}"></path></svg>
+                      <div style="{{e.packet}}"></div>
+                      <sc-if value="{{e.chip}}" hint-placeholder-val="{{ false }}"><div class="mono" style="{{e.chipStyle}}">{{e.chip}}</div></sc-if>
+                    </div>
+                  </sc-for>
+                  <sc-for list="{{flowNodes}}" as="n" hint-placeholder-count="6">
+                    <button class="rm-fnode" style="{{n.style}}" onClick="{{n.click}}" onDoubleClick="{{n.dbl}}" onMouseEnter="{{n.enter}}" onMouseLeave="{{n.leave}}" onFocus="{{n.enter}}" onBlur="{{n.leave}}" aria-label="{{n.aria}}">
+                      <span style="display:flex; align-items:center; gap:7px; width:100%">
+                        <span class="mono" style="{{n.badgeStyle}}">{{n.badge}}</span>
+                        <span class="mono" style="font-size:13px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{n.name}}</span>
+                        <sc-if value="{{n.isRoot}}" hint-placeholder-val="{{ false }}"><span class="mono" style="margin-left:auto; font-size:10px; font-weight:600; letter-spacing:.08em; color:#b9c79a">ROOT</span></sc-if>
+                      </span>
+                      <span class="mono" style="{{n.sigStyle}}">{{n.sig}}</span>
+                      <sc-if value="{{n.hasDoc}}" hint-placeholder-val="{{ true }}"><span style="{{n.docStyle}}">{{n.doc}}</span></sc-if>
+                      <span class="mono" style="margin-top:auto; font-size:11px; color:#94a1ae; white-space:nowrap">{{n.meta}}</span>
+                      <sc-if value="{{n.hasBar}}" hint-placeholder-val="{{ true }}"><span style="display:flex; align-items:flex-end; gap:2px; width:100%"><sc-for list="{{n.ticks}}" as="t"><span style="{{t.s}}"></span></sc-for></span></sc-if>
+                      <span style="{{n.portL}}"></span><span style="{{n.portR}}"></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </main>
+
+    <div class="rm-resize" onMouseDown="{{startResize}}" role="separator" aria-orientation="vertical" aria-label="Resize inspector"></div>
+
+    <!-- ===== INSPECTOR ===== -->
+    <aside class="rm-insp" aria-label="Inspector" style="{{inspStyle}}">
+      <div style="padding:14px 16px 12px; border-bottom:1px solid #222a33">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px"><sc-if value="{{canBack}}" hint-placeholder-val="{{ false }}"><button class="rm-btn rm-btn-sm rm-btn-icon" onClick="{{goBack}}" aria-label="Back to previous selection">←</button></sc-if><sc-for list="{{inspBadges}}" as="b"><span class="mono" style="{{b.s}}">{{b.t}}</span></sc-for></div>
+        <div class="mono" style="font-size:15px; font-weight:600; word-break:break-word">{{inspTitle}}</div>
+        <div class="mono" style="margin-top:2px; font-size:11.5px; color:#94a1ae; word-break:break-word">{{inspSub}}</div>
+      </div>
+      <div role="tablist" style="position:relative; display:flex; border-bottom:1px solid #222a33">
+        <div aria-hidden="true" style="{{inspInd}}"></div>
+        <sc-for list="{{inspTabs}}" as="t"><button role="tab" class="{{t.cls}}" aria-selected="{{t.on}}" onClick="{{t.click}}">{{t.label}}</button></sc-for>
+      </div>
+      <div class="rm-scroll" style="flex:1; min-height:0; overflow:auto; padding:14px 16px 24px">
+
+        <sc-if value="{{tabSummary}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:16px">
+            <sc-if value="{{sumLead}}" hint-placeholder-val="{{ true }}"><p class="rm-serif" style="margin:0; font-size:25px; line-height:1.15; letter-spacing:-0.01em; color:#f1ece0">{{sumLead}}</p></sc-if>
+            <sc-if value="{{sumDoc}}" hint-placeholder-val="{{ true }}"><p style="margin:0; font-size:13.5px; line-height:1.55">{{sumDoc}}</p></sc-if>
+            <sc-if value="{{sumSig}}" hint-placeholder-val="{{ true }}"><div class="mono" style="padding:10px 12px; background:#0b0e11; border:1px solid #222a33; border-radius:7px; font-size:12px; line-height:1.55; color:#c6d0d9; word-break:break-word">{{sumSig}}</div></sc-if>
+            <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px">
+              <sc-for list="{{sumMetrics}}" as="m" hint-placeholder-count="4">
+                <div style="padding:9px 11px; background:#0b0e11; border:1px solid #222a33; border-radius:7px">
+                  <div style="font-size:11px; color:#94a1ae; letter-spacing:.04em">{{m.k}}</div>
+                  <div class="mono" style="{{m.s}}">{{m.v}}</div>
+                </div>
+              </sc-for>
+            </div>
+            <sc-for list="{{sumLists}}" as="l" hint-placeholder-count="2">
+              <div>
+                <div class="rm-h" style="margin-bottom:4px">{{l.title}}</div>
+                <sc-for list="{{l.rows}}" as="r">
+                  <button class="rm-lrow" onClick="{{r.click}}"><span class="mono" style="{{r.nameStyle}}">{{r.name}}</span><span class="mono" style="font-size:11px; color:#94a1ae; text-align:right">{{r.meta}}</span></button>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div style="display:flex; flex-wrap:wrap; gap:8px"><sc-for list="{{sumActions}}" as="a"><button class="rm-btn rm-btn-sm" onClick="{{a.click}}">{{a.label}}</button></sc-for></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{tabSource}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <div class="mono" style="font-size:11.5px; color:#94a1ae">{{srcHead}}</div>
+            <sc-if value="{{hasSrcLines}}" hint-placeholder-val="{{ true }}">
+              <div class="rm-scroll" style="overflow-x:auto; padding:8px 0; background:#0b0e11; border:1px solid #222a33; border-radius:7px">
+                <sc-for list="{{srcLines}}" as="l" hint-placeholder-count="6">
+                  <div style="{{l.rowStyle}}"><span class="mono" style="flex:none; width:46px; padding-right:12px; text-align:right; font-size:11.5px; color:#7d8a97; user-select:none">{{l.n}}</span><span class="mono" style="font-size:12px; line-height:1.65; white-space:pre"><sc-for list="{{l.parts}}" as="p"><span style="{{p.s}}">{{p.t}}</span></sc-for></span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="font-size:12.5px; color:#94a1ae; line-height:1.55">{{srcNote}}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{tabEvidence}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:16px">
+            <sc-for list="{{evGroups}}" as="g" hint-placeholder-count="2">
+              <div>
+                <div class="rm-h" style="margin-bottom:8px">{{g.title}}</div>
+                <div style="display:flex; flex-direction:column; gap:8px">
+                  <sc-for list="{{g.items}}" as="i">
+                    <div style="padding:10px 12px; background:#0b0e11; border:1px solid #222a33; border-radius:7px; display:flex; flex-direction:column; gap:7px">
+                      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
+                        <button class="rm-cite" onClick="{{i.click}}">{{i.cite}}</button>
+                        <span class="mono" style="font-size:11.5px; color:#94a1ae">{{i.who}}</span>
+                      </div>
+                      <div class="mono" style="font-size:12px; line-height:1.55; white-space:pre-wrap; word-break:break-word"><sc-for list="{{i.parts}}" as="p"><span style="{{p.s}}">{{p.t}}</span></sc-for></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="font-size:12.5px; color:#94a1ae">{{evNote}}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{tabExplain}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#94a1ae"><span style="width:7px; height:7px; border-radius:50%; background:#8fb996"></span>Rule-based · derived from the static index</div>
+            <div style="display:flex; flex-direction:column; gap:10px">
+              <sc-for list="{{exBullets}}" as="b" hint-placeholder-count="4">
+                <div style="display:grid; grid-template-columns:14px minmax(0,1fr); gap:6px; font-size:13px; line-height:1.55"><span class="mono" style="color:#b9c79a">·</span><span><sc-for list="{{b.parts}}" as="p"><span style="{{p.s}}">{{p.t}}</span></sc-for></span></div>
+              </sc-for>
+            </div>
+            <div style="padding:12px 14px; background:#0b0e11; border:1px solid #222a33; border-radius:8px; display:flex; flex-direction:column; gap:6px">
+              <div class="rm-h" style="margin:0">{{aiCardTitle}}</div>
+              <div style="font-size:13px; line-height:1.55; color:#c6d0d9">{{aiCardBody}}</div>
+              <div><button class="rm-btn rm-btn-sm" onClick="{{toggleAI}}">{{aiCardAction}}</button></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== BODY ===== -->
+  
+
+  <!-- click-away layer for menus and the answer panel -->
+  <sc-if value="{{anyOpen}}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{closeAll}}" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:25"></div>
+  </sc-if>
+
+  <!-- ===== COMMAND PALETTE ===== -->
+  <sc-if value="{{palOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:60; background:rgba(5,7,9,.62); display:flex; justify-content:center; align-items:flex-start; padding:90px 16px 16px" onClick="{{closeAll}}">
+      <div role="dialog" aria-label="Command palette" onClick="{{stop}}" style="width:min(580px,100%); background:#161b21; border:1px solid #3a4654; border-radius:12px; box-shadow:0 30px 70px rgba(0,0,0,.7); overflow:hidden">
+        <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #2d3742">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#94a1ae" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.75"></circle><path d="M10.6 10.6L14 14"></path></svg>
+          <label for="rm-pal-input" class="sr">Command</label>
+          <input id="rm-pal-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type a command or a symbol…" value="{{palQ}}" onChange="{{onPalQuery}}" onKeyDown="{{onPalKey}}" style="flex:1; background:transparent; border:0; outline:0; font-size:14px; color:#dce3ea">
+          <span class="rm-kbd">Esc</span>
+        </div>
+        <div class="rm-scroll" style="max-height:340px; overflow:auto; padding:6px">
+          <sc-for list="{{palItems}}" as="p" hint-placeholder-count="6">
+            <button class="{{p.cls}}" onClick="{{p.click}}"><span>{{p.label}}</span><span class="mono" style="font-size:11.5px; color:#94a1ae">{{p.hint}}</span></button>
+          </sc-for>
+          <sc-if value="{{palEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px 12px; color:#94a1ae">No command matches that.</div></sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== ENVELOPE INTRO ===== -->
+  <sc-if value="{{gateVisible}}" hint-placeholder-val="{{ false }}">
+    <div class="rm-gate" data-s="{{gate}}" role="dialog" aria-label="Choose a repository to open" onMouseMove="{{gateMove}}">
+      <div class="rm-gate-bg rm-drift" aria-hidden="true"></div>
+      <div id="rm-glyphs" class="rm-glyphs" aria-hidden="true"><sc-for list="{{glyphs}}" as="g" hint-placeholder-count="0"><span class="mono rm-glyph" style="{{g.style}}">{{g.t}}</span></sc-for></div>
+      <button class="rm-btn rm-skip" onClick="{{skipGate}}">Skip intro</button>
+
+      <div class="rm-gate-col">
+        <div class="rm-gate-title">
+          <div style="display:flex; align-items:center; gap:9px">
+            <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M7 17.5L13 8.5L19 17.5" stroke="#7fb0b4" stroke-width="1.6" stroke-linejoin="round"></path><circle cx="13" cy="8.5" r="2.4" fill="#b9c79a"></circle><circle cx="7" cy="17.5" r="2" fill="#07090c" stroke="#7fb0b4" stroke-width="1.6"></circle><circle cx="19" cy="17.5" r="2" fill="#07090c" stroke="#7fb0b4" stroke-width="1.6"></circle></svg>
+            <span style="font-size:15px; font-weight:600; letter-spacing:.02em">RepoMind</span>
+          </div>
+          <h1 class="rm-serif" style="margin:0; font-size:clamp(38px, 7vw, 68px); font-weight:400; line-height:.98; letter-spacing:-0.03em; color:#f1ece0">Which <i style="color:#b9c79a">codebase</i> today?</h1>
+          <p style="margin:0; max-width:430px; color:#94a1ae; font-size:14px">Pick a repo. RepoMind indexes it on this machine and opens the briefing. No AI needed.</p>
+        </div>
+
+        <div class="rm-env-tilt" style="{{tiltStyle}}">
+          <div id="rm-env" class="rm-env" aria-hidden="true">
+            <div class="rm-env-shadow"></div>
+            <div class="rm-env-back"></div>
+            <div class="rm-letter-rise">
+              <div class="rm-letter" style="display:flex; flex-direction:column; gap:5%; padding:5%; overflow:hidden">
+                <div style="display:flex; align-items:center; gap:6px"><span style="width:7px; height:7px; border-radius:50%; background:#b9c79a"></span><span class="mono" style="font-size:10px; color:#dce3ea">RepoMind · {{repoName}}</span></div>
+                <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px">
+                  <div style="height:30px; border:1px solid #222a33; border-radius:4px; background:#11151a; padding:6px"><div class="rm-lt-bar" style="height:5px; width:70%; background:#7fb0b4; border-radius:2px"></div></div>
+                  <div style="height:30px; border:1px solid #222a33; border-radius:4px; background:#11151a; padding:6px"><div class="rm-lt-bar" style="height:5px; width:55%; background:#a79fc7; border-radius:2px; animation-delay:.3s"></div></div>
+                  <div style="height:30px; border:1px solid #222a33; border-radius:4px; background:#11151a; padding:6px"><div class="rm-lt-bar" style="height:5px; width:80%; background:#b9c79a; border-radius:2px; animation-delay:.6s"></div></div>
+                  <div style="height:30px; border:1px solid #222a33; border-radius:4px; background:#11151a; padding:6px"><div class="rm-lt-bar" style="height:5px; width:45%; background:#8fb996; border-radius:2px; animation-delay:.9s"></div></div>
+                </div>
+                <div style="display:flex; gap:2px; height:7px"><div class="rm-lt-bar" style="width:58%; background:#7fb0b4"></div><div class="rm-lt-bar" style="width:34%; background:#a79fc7; animation-delay:.4s"></div><div class="rm-lt-bar" style="width:8%; background:#b9c79a; animation-delay:.8s"></div></div>
+                <div style="flex:1; display:grid; grid-template-columns:2fr 1.4fr 1fr; grid-template-rows:1fr 1fr; gap:3px">
+                  <div style="grid-row:span 2; background:#15353d; border-radius:3px; animation:rm-breathe 3s ease-in-out infinite"></div>
+                  <div style="background:#27244d; border-radius:3px; animation:rm-breathe 3.4s ease-in-out infinite .4s"></div>
+                  <div style="background:#15353d; border-radius:3px; animation:rm-breathe 2.8s ease-in-out infinite .8s"></div>
+                  <div style="background:#15353d; border-radius:3px; animation:rm-breathe 3.2s ease-in-out infinite 1.2s"></div>
+                  <div style="background:#41331a; border-radius:3px; animation:rm-breathe 3.6s ease-in-out infinite .2s"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rm-pk rm-pk-l"></div>
+            <div class="rm-pk rm-pk-r"></div>
+            <div class="rm-pk rm-pk-b"></div>
+            <svg class="rm-seams" viewBox="0 0 300 200" preserveAspectRatio="none"><path d="M0 0 L150 112 L0 200 M300 0 L150 112 L300 200 M0 200 L150 112 L300 200" fill="none" stroke="#3d4a57" stroke-width="1" vector-effect="non-scaling-stroke"></path></svg>
+            <div class="rm-flap"><svg viewBox="0 0 300 112" preserveAspectRatio="none" style="position:absolute; left:0; top:0; width:100%; height:100%"><path d="M0 0 L150 112 L300 0" fill="none" stroke="#4a5866" stroke-width="1" vector-effect="non-scaling-stroke"></path></svg></div>
+            <div class="rm-addr">
+              <span class="mono" style="font-size:9px; letter-spacing:.16em; color:#94a1ae">OPEN</span>
+              <span class="mono" style="max-width:100%; font-size:13px; font-weight:600; color:#b9c79a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{gateTarget}}</span>
+            </div>
+            <div class="rm-stamp"><span class="mono" style="font-size:9px; letter-spacing:.14em; color:#94a1ae">INDEX</span></div>
+            <div class="rm-seal"><svg width="46%" viewBox="0 0 26 26" fill="none"><path d="M7 17.5L13 8.5L19 17.5" stroke="#12160d" stroke-width="2.2" stroke-linejoin="round"></path><circle cx="13" cy="8.5" r="2.6" fill="#12160d"></circle><circle cx="7" cy="17.5" r="2.2" fill="#12160d"></circle><circle cx="19" cy="17.5" r="2.2" fill="#12160d"></circle></svg></div>
+          </div>
+        </div>
+
+        <div class="rm-choices" role="group" aria-label="Repositories">
+          <sc-for list="{{gateRepos}}" as="r" hint-placeholder-count="3">
+            <button class="rm-choice" style="{{r.style}}" onClick="{{r.click}}" onMouseEnter="{{r.enter}}" onMouseLeave="{{r.leave}}" onFocus="{{r.enter}}" onBlur="{{r.leave}}">
+              <span style="display:flex; align-items:center; gap:8px"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#b9c79a" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M1.75 4.25a1 1 0 0 1 1-1h3l1.5 1.75h6a1 1 0 0 1 1 1v6.25a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1z"></path></svg><span class="mono" style="font-size:13.5px; font-weight:600">{{r.name}}</span></span>
+              <span style="font-size:12px; color:#94a1ae">{{r.meta}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== TOAST ===== -->
+  <div aria-live="polite" style="position:absolute; left:16px; bottom:16px; z-index:70; pointer-events:none">
+    <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+      <div style="padding:10px 14px; background:#1d252d; border:1px solid #3a4654; border-radius:8px; font-size:13px; box-shadow:0 12px 30px rgba(0,0,0,.5)">{{toast}}</div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"aiOn":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      view: 'overview', tab: 'summary', sel: { k: 'fn', id: 'get_current_user' }, inspW: 400,
+      ai: !!(props && props.aiOn), repo: 'ledgerline', repoOpen: false, exportOpen: false,
+      palOpen: false, palQ: '', query: '', answer: null, askOpen: false, indexing: null, toast: null,
+      flowRoot: 'login', flowMode: 'both', depth: 3, outline: false, zoom: 1, hover: null,
+      archPath: null, hlLine: null, gate: 'pick', gateHover: null, count: 0, hist: [], tmHover: null
+    };
+  }
+
+  /* selection history powers the inspector's Back button */
+  setState(o, cb) {
+    if (o && o.sel && !this._back) {
+      const cur = this.state.sel;
+      if (cur && (cur.k !== o.sel.k || cur.id !== o.sel.id)) o = Object.assign({}, o, { hist: (this.state.hist || []).concat([cur]).slice(-20) });
+    }
+    return super.setState(o, cb);
+  }
+  goBack() {
+    const h = (this.state.hist || []).slice(); const prev = h.pop(); if (!prev) return;
+    this._back = true; this.setState({ sel: prev, hist: h, hlLine: null }); this._back = false;
+  }
+  updateVp(el) {
+    const vp = document.getElementById('rm-vp'); const m = this._mm; if (!vp || !m || !el) return;
+    const l = Math.max(0, Math.min(m.mw, el.scrollLeft / m.zoom * m.ms)), t = Math.max(0, Math.min(m.mh, el.scrollTop / m.zoom * m.ms));
+    vp.style.left = l + 'px'; vp.style.top = t + 'px';
+    vp.style.width = Math.max(6, Math.min(m.mw - l, el.clientWidth / m.zoom * m.ms)) + 'px'; vp.style.height = Math.max(6, Math.min(m.mh - t, el.clientHeight / m.zoom * m.ms)) + 'px';
+  }
+
+  /* ------------------------------------------------------------- intro / motion */
+  openRepo(name) {
+    if (this.state.gate !== 'pick') return;
+    this.setState({ gate: 'opening', repo: name, gateHover: name });
+    clearTimeout(this._g1); clearTimeout(this._g2);
+    this._g1 = setTimeout(() => { this.setState({ gate: 'fading' }); this.runCount(); }, 2950);
+    this._g2 = setTimeout(() => this.setState({ gate: 'done' }), 3650);
+  }
+  skipGate() {
+    clearTimeout(this._g1); clearTimeout(this._g2);
+    this.setState({ gate: 'done', gateHover: null });
+    this.runCount();
+  }
+  replayGate() {
+    clearTimeout(this._g1); clearTimeout(this._g2);
+    this.setState({ gate: 'pick', gateHover: null, repoOpen: false, exportOpen: false, askOpen: false, palOpen: false });
+  }
+  runCount() {
+    clearInterval(this._ci);
+    const t0 = Date.now(); this.setState({ count: 0 });
+    this._ci = setInterval(() => {
+      const p = Math.max(0, Math.min(1, (Date.now() - t0 - 350) / 1500));
+      this.setState({ count: p });
+      if (p >= 1) clearInterval(this._ci);
+    }, 40);
+  }
+  packet(d, hot, dim, i, ext) {
+    const col = ext ? '#94a1ae' : hot ? '#7fb0b4' : '#b9c79a'; const sz = hot ? 8 : 6;
+    return 'position:absolute;left:0;top:0;width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + col + ';box-shadow:0 0 8px ' + col + ';offset-path:path("' + d + '");offset-rotate:0deg;animation:rm-packet ' + (hot ? 1.6 : 2.8) + 's linear infinite;animation-delay:-' + ((i * 0.37) % 2.8).toFixed(2) + 's;visibility:' + (dim ? 'hidden' : 'visible');
+  }
+
+  /* ------------------------------------------------------------------ data */
+  D() {
+    if (this._d) return this._d;
+    const N = {};
+    const add = (o) => { N[o.id] = Object.assign({ kind: 'fn', fi: 0, cx: 1, loc: 1, doc: '', src: '', s0: 1 }, o); };
+
+    add({ id: 'login', name: 'login', kind: 'ep', route: 'POST /auth/login', auth: 'authentication', file: 'api/auth.py', ln: 42, s0: 41, loc: 10, cx: 3, fi: 0,
+      sig: 'async def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenPair',
+      doc: 'Exchange email + password for an access/refresh token pair.',
+      note: 'it is the entry point that issues credentials, so it cannot sit behind a token guard.',
+      src: `@router.post("/login", response_model=TokenPair)
+async def login(body: LoginIn, db: Session = Depends(get_db)):
+    """Exchange email + password for an access/refresh token pair."""
+    user = authenticate_user(db, body.email, body.password)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    access = create_access_token(user.id, scopes=user.scopes)
+    refresh = create_refresh_token(user.id)
+    record_event(db, actor=user.id, action="auth.login")
+    return TokenPair(access_token=access, refresh_token=refresh)` });
+
+    add({ id: 'refresh', name: 'refresh', kind: 'ep', route: 'POST /auth/refresh', auth: 'authentication', file: 'api/auth.py', ln: 77, s0: 76, loc: 8, cx: 3, fi: 0,
+      sig: 'async def refresh(body: RefreshIn, db: Session = Depends(get_db)) -> TokenPair',
+      doc: 'Rotate a refresh token for a new access token.',
+      note: 'it authenticates with the refresh token in the body, not a bearer header.',
+      src: `@router.post("/refresh", response_model=TokenPair)
+async def refresh(body: RefreshIn, db: Session = Depends(get_db)):
+    """Rotate a refresh token for a new access token."""
+    claims = jwt.decode(body.refresh_token, settings.JWT_SECRET, algorithms=["HS256"])
+    if claims.get("typ") != "refresh" or is_token_revoked(claims["jti"]):
+        raise HTTPException(status_code=401)
+    user = get_user_by_id(db, UUID(claims["sub"]))
+    return TokenPair(access_token=create_access_token(user.id, scopes=user.scopes), refresh_token=body.refresh_token)` });
+
+    add({ id: 'authenticate_user', name: 'authenticate_user', file: 'services/auth.py', ln: 58, s0: 58, loc: 12, cx: 7, fi: 2,
+      sig: 'def authenticate_user(db: Session, email: str, password: str) -> User | None',
+      doc: 'Look up the user and check the password; locks the account after 5 failures.',
+      src: `def authenticate_user(db: Session, email: str, password: str) -> User | None:
+    """Look up the user and check the password; locks the account after 5 failures."""
+    user = get_user_by_email(db, email.lower())
+    if user is None or not user.is_active:
+        return None
+    if user.locked_until and user.locked_until > utcnow():
+        return None
+    if not verify_password(password, user.password_hash):
+        bump_failed_logins(db, user)
+        return None
+    user.failed_logins = 0
+    return user` });
+
+    add({ id: 'get_user_by_email', name: 'get_user_by_email', file: 'repo/users.py', ln: 31, s0: 31, loc: 3, cx: 1, fi: 2,
+      sig: 'def get_user_by_email(db: Session, email: str) -> User | None',
+      src: `def get_user_by_email(db: Session, email: str) -> User | None:
+    stmt = select(User).where(User.email == email)
+    return db.execute(stmt).scalar_one_or_none()` });
+
+    add({ id: 'verify_password', name: 'verify_password', file: 'core/security.py', ln: 19, s0: 19, loc: 3, cx: 1, fi: 2,
+      sig: 'def verify_password(plain: str, hashed: str) -> bool',
+      doc: 'Constant-time check against the stored bcrypt hash.',
+      src: `def verify_password(plain: str, hashed: str) -> bool:
+    """Constant-time check against the stored bcrypt hash."""
+    return pwd_context.verify(plain, hashed)` });
+
+    add({ id: 'bump_failed_logins', name: 'bump_failed_logins', file: 'services/auth.py', ln: 104, s0: 104, loc: 6, cx: 2, fi: 1,
+      sig: 'def bump_failed_logins(db: Session, user: User) -> None',
+      src: `def bump_failed_logins(db: Session, user: User) -> None:
+    user.failed_logins += 1
+    if user.failed_logins >= MAX_FAILED_LOGINS:
+        user.locked_until = utcnow() + LOCKOUT_WINDOW
+        record_event(db, actor=user.id, action="auth.lockout")
+    db.commit()` });
+
+    add({ id: 'create_access_token', name: 'create_access_token', file: 'core/tokens.py', ln: 27, s0: 27, loc: 5, cx: 1, fi: 3,
+      sig: 'def create_access_token(sub: UUID, scopes: list[str], ttl: timedelta = ACCESS_TTL) -> str',
+      doc: 'Short-lived signed JWT carrying the subject and scopes.',
+      src: `def create_access_token(sub: UUID, scopes: list[str], ttl: timedelta = ACCESS_TTL) -> str:
+    """Short-lived signed JWT carrying the subject and scopes."""
+    now = utcnow()
+    claims = {"sub": str(sub), "scopes": scopes, "jti": uuid4().hex, "iat": now, "exp": now + ttl}
+    return jwt.encode(claims, settings.JWT_SECRET, algorithm="HS256")` });
+
+    add({ id: 'create_refresh_token', name: 'create_refresh_token', file: 'core/tokens.py', ln: 61, s0: 61, loc: 5, cx: 1, fi: 1,
+      sig: 'def create_refresh_token(sub: UUID) -> str',
+      doc: 'Long-lived token; its jti is stored in Redis so it can be revoked.',
+      src: `def create_refresh_token(sub: UUID) -> str:
+    """Long-lived token; its jti is stored in Redis so it can be revoked."""
+    jti = uuid4().hex
+    redis.setex(f"refresh:{jti}", REFRESH_TTL_SECONDS, str(sub))
+    return jwt.encode({"sub": str(sub), "jti": jti, "typ": "refresh"}, settings.JWT_SECRET, algorithm="HS256")` });
+
+    add({ id: 'record_event', name: 'record_event', file: 'events/audit.py', ln: 14, s0: 14, loc: 7, cx: 2, fi: 14,
+      sig: 'def record_event(db: Session, actor: UUID | None, action: str, **meta) -> None',
+      doc: 'Append an audit row; never raises into the request path.',
+      src: `def record_event(db: Session, actor: UUID | None, action: str, **meta) -> None:
+    """Append an audit row; never raises into the request path."""
+    try:
+        db.add(AuditEvent(actor_id=actor, action=action, meta=meta))
+        db.flush()
+    except SQLAlchemyError:
+        log.exception("audit write failed")` });
+
+    add({ id: 'get_current_user', name: 'get_current_user', file: 'api/deps.py', ln: 23, s0: 23, loc: 12, cx: 6, fi: 31, guard: true,
+      gnote: 'Decodes the bearer token, rejects revoked ids, loads the user.',
+      sig: 'def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User',
+      doc: 'Decode the bearer token and load the user. Raises 401 on any failure.',
+      src: `def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    """Decode the bearer token and load the user. Raises 401 on any failure."""
+    try:
+        claims = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        raise CREDENTIALS_ERROR
+    if is_token_revoked(claims["jti"]):
+        raise CREDENTIALS_ERROR
+    user = get_user_by_id(db, UUID(claims["sub"]))
+    if user is None or not user.is_active:
+        raise CREDENTIALS_ERROR
+    return user` });
+
+    add({ id: 'require_scope', name: 'require_scope', file: 'api/deps.py', ln: 71, s0: 71, loc: 7, cx: 2, fi: 12, guard: true,
+      gnote: 'Dependency factory: 403 unless the token carries the scope.',
+      sig: 'def require_scope(scope: str)',
+      doc: 'Dependency factory: 403 unless the caller\'s token carries `scope`.',
+      src: `def require_scope(scope: str):
+    """Dependency factory: 403 unless the caller's token carries \`scope\`."""
+    def checker(user: User = Depends(get_current_user)) -> User:
+        if scope not in user.scopes:
+            raise HTTPException(status_code=403, detail="Insufficient scope")
+        return user
+    return checker` });
+
+    add({ id: 'is_token_revoked', name: 'is_token_revoked', file: 'core/tokens.py', ln: 94, s0: 94, loc: 2, cx: 1, fi: 3, guard: true,
+      gnote: 'Redis denylist lookup by jti.',
+      sig: 'def is_token_revoked(jti: str) -> bool',
+      src: `def is_token_revoked(jti: str) -> bool:
+    return redis.exists(f"revoked:{jti}") == 1` });
+
+    add({ id: 'can_view_invoice', name: 'can_view_invoice', file: 'core/policy.py', ln: 12, s0: 12, loc: 6, cx: 5, fi: 6, guard: true,
+      gnote: 'Object-level policy: admin, owner, or billing on non-drafts.',
+      sig: 'def can_view_invoice(user: User, invoice: Invoice) -> bool',
+      src: `def can_view_invoice(user: User, invoice: Invoice) -> bool:
+    if "admin" in user.roles:
+        return True
+    if invoice.owner_id == user.id:
+        return True
+    return invoice.status != "draft" and "billing" in user.roles` });
+
+    add({ id: 'get_user_by_id', name: 'get_user_by_id', file: 'repo/users.py', ln: 18, s0: 18, loc: 2, cx: 1, fi: 5,
+      sig: 'def get_user_by_id(db: Session, user_id: UUID) -> User | None',
+      src: `def get_user_by_id(db: Session, user_id: UUID) -> User | None:
+    return db.get(User, user_id)` });
+
+    add({ id: 'get_invoice', name: 'get_invoice', kind: 'ep', route: 'GET /invoices/{invoice_id}', auth: 'protected', file: 'api/invoices.py', ln: 87, s0: 86, loc: 8, cx: 1, fi: 0,
+      sig: 'async def get_invoice(invoice_id: UUID, user: User = Depends(require_scope("invoices:read")), db: Session = Depends(get_db))',
+      doc: 'Return one invoice the caller is allowed to see.',
+      note: 'the invoices:read scope is enforced through require_scope.',
+      src: `@router.get("/{invoice_id}", response_model=InvoiceOut)
+async def get_invoice(
+    invoice_id: UUID,
+    user: User = Depends(require_scope("invoices:read")),
+    db: Session = Depends(get_db),
+):
+    """Return one invoice the caller is allowed to see."""
+    invoice = get_invoice_for_user(db, user, invoice_id)
+    return serialize_invoice(invoice)` });
+
+    add({ id: 'list_invoices', name: 'list_invoices', kind: 'ep', route: 'GET /invoices', auth: 'protected', file: 'api/invoices.py', ln: 41, s0: 40, loc: 3, cx: 1, fi: 0,
+      sig: 'async def list_invoices(user: User = Depends(get_current_user), db: Session = Depends(get_db), q: InvoiceQuery = Depends())',
+      note: 'any authenticated user may call it; rows are tenant-scoped in query_invoices.',
+      src: `@router.get("", response_model=Page[InvoiceOut])
+async def list_invoices(user: User = Depends(get_current_user), db: Session = Depends(get_db), q: InvoiceQuery = Depends()):
+    return paginate(query_invoices(db, user, q))` });
+
+    add({ id: 'read_me', name: 'read_me', kind: 'ep', route: 'GET /users/me', auth: 'protected', file: 'api/users.py', ln: 19, s0: 18, loc: 3, cx: 1, fi: 0,
+      sig: 'async def read_me(user: User = Depends(get_current_user))',
+      note: 'it only needs a valid token.',
+      src: `@router.get("/me", response_model=UserOut)
+async def read_me(user: User = Depends(get_current_user)):
+    return user` });
+
+    add({ id: 'get_invoice_for_user', name: 'get_invoice_for_user', file: 'services/invoices.py', ln: 47, s0: 47, loc: 8, cx: 5, fi: 4,
+      sig: 'def get_invoice_for_user(db: Session, user: User, invoice_id: UUID) -> Invoice',
+      doc: 'Fetch an invoice, enforcing tenant and role policy.',
+      src: `def get_invoice_for_user(db: Session, user: User, invoice_id: UUID) -> Invoice:
+    """Fetch an invoice, enforcing tenant and role policy."""
+    invoice = db.get(Invoice, invoice_id)
+    if invoice is None or invoice.tenant_id != user.tenant_id:
+        raise HTTPException(status_code=404)
+    if not can_view_invoice(user, invoice):
+        raise HTTPException(status_code=403)
+    return invoice` });
+
+    add({ id: 'serialize_invoice', name: 'serialize_invoice', file: 'schemas/invoices.py', ln: 63, s0: 63, loc: 2, cx: 1, fi: 5,
+      sig: 'def serialize_invoice(inv: Invoice) -> InvoiceOut',
+      src: `def serialize_invoice(inv: Invoice) -> InvoiceOut:
+    return InvoiceOut.model_validate(inv, from_attributes=True)` });
+
+    add({ id: 'stripe_webhook', name: 'stripe_webhook', kind: 'ep', route: 'POST /payments/webhook', auth: 'public', file: 'api/payments.py', ln: 31, s0: 30, loc: 13, cx: 6, fi: 0,
+      sig: 'async def stripe_webhook(request: Request, db: Session = Depends(get_db))',
+      doc: 'Verify the Stripe signature, then apply the event.',
+      note: 'it relies on the Stripe signature check instead of a user token.',
+      src: `@router.post("/webhook", status_code=204)
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """Verify the Stripe signature, then apply the event."""
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, settings.STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.error.SignatureVerificationError):
+        raise HTTPException(status_code=400)
+    if event["type"] == "invoice.paid":
+        mark_invoice_paid(db, event["data"]["object"]["id"])
+    elif event["type"] == "invoice.payment_failed":
+        record_event(db, actor=None, action="payment.failed", **event["data"]["object"])` });
+
+    add({ id: 'mark_invoice_paid', name: 'mark_invoice_paid', file: 'services/invoices.py', ln: 120, s0: 120, loc: 9, cx: 3, fi: 2,
+      sig: 'def mark_invoice_paid(db: Session, invoice_id: str) -> None',
+      doc: 'Idempotently flip an invoice to paid and queue the receipt.',
+      src: `def mark_invoice_paid(db: Session, invoice_id: str) -> None:
+    """Idempotently flip an invoice to paid and queue the receipt."""
+    invoice = db.get(Invoice, invoice_id)
+    if invoice is None or invoice.status == "paid":
+        return
+    invoice.status = "paid"
+    invoice.paid_at = utcnow()
+    record_event(db, actor=None, action="invoice.paid", invoice_id=invoice_id)
+    send_receipt.delay(invoice.id)` });
+
+    add({ id: 'send_receipt', name: 'send_receipt', file: 'tasks/email.py', ln: 9, s0: 8, loc: 4, cx: 1, fi: 1,
+      sig: 'def send_receipt(invoice_id: UUID) -> None',
+      doc: 'Email the PDF receipt to the invoice contact.',
+      src: `@celery.task(bind=False, max_retries=3)
+def send_receipt(invoice_id: UUID) -> None:
+    """Email the PDF receipt to the invoice contact."""
+    invoice = load_invoice(invoice_id)
+    httpx.post(settings.MAIL_API_URL, json=render_receipt(invoice), timeout=10)` });
+
+    add({ id: 'get_db', name: 'get_db', file: 'api/deps.py', ln: 12, s0: 12, loc: 3, cx: 1, fi: 38,
+      sig: 'def get_db() -> Iterator[Session]',
+      src: `def get_db() -> Iterator[Session]:
+    with SessionLocal() as db:
+        yield db` });
+
+    add({ id: 'utcnow', name: 'utcnow', file: 'core/clock.py', ln: 6, s0: 6, loc: 3, cx: 1, fi: 9,
+      sig: 'def utcnow() -> datetime',
+      doc: 'Timezone-aware now; the only clock the app reads.',
+      src: `def utcnow() -> datetime:
+    """Timezone-aware now; the only clock the app reads."""
+    return datetime.now(timezone.utc)` });
+
+    add({ id: 'build_aging_report', name: 'build_aging_report', file: 'services/reports.py', ln: 212, s0: 212, loc: 148, cx: 21, fi: 2,
+      sig: 'def build_aging_report(db: Session, tenant_id: UUID, as_of: date) -> AgingReport',
+      doc: 'Bucket open invoices into 0-30, 31-60, 61-90 and 90+ day buckets.',
+      src: `def build_aging_report(db: Session, tenant_id: UUID, as_of: date) -> AgingReport:
+    """Bucket open invoices into 0-30, 31-60, 61-90 and 90+ day buckets."""
+    rows = query_open_invoices(db, tenant_id, as_of)
+    buckets = {b: Decimal(0) for b in BUCKETS}
+…  141 more lines not shown` });
+
+    add({ id: 'reconcile_payments', name: 'reconcile_payments', file: 'tasks/reconcile.py', ln: 57, s0: 57, loc: 121, cx: 18, fi: 1,
+      sig: 'def reconcile_payments(db: Session, since: datetime) -> ReconcileResult',
+      doc: 'Match Stripe payouts against paid invoices and flag mismatches.',
+      src: `def reconcile_payments(db: Session, since: datetime) -> ReconcileResult:
+    """Match Stripe payouts against paid invoices and flag mismatches."""
+    payouts = fetch_payouts(since)
+…  114 more lines not shown` });
+
+    add({ id: 'apply_discounts', name: 'apply_discounts', file: 'services/billing.py', ln: 301, s0: 301, loc: 96, cx: 16, fi: 3,
+      sig: 'def apply_discounts(invoice: Invoice, rules: Sequence[DiscountRule]) -> Invoice',
+      doc: 'Apply stackable discount rules in priority order, capped at 100%.',
+      src: `def apply_discounts(invoice: Invoice, rules: Sequence[DiscountRule]) -> Invoice:
+    """Apply stackable discount rules in priority order, capped at 100%."""
+…  94 more lines not shown` });
+
+    add({ id: 'query_invoices', name: 'query_invoices', file: 'repo/invoices.py', ln: 140, s0: 140, loc: 87, cx: 12, fi: 4,
+      sig: 'def query_invoices(db: Session, user: User, q: InvoiceQuery) -> Select',
+      doc: 'Build the tenant-scoped, filterable invoice listing query.',
+      src: `def query_invoices(db: Session, user: User, q: InvoiceQuery) -> Select:
+    """Build the tenant-scoped, filterable invoice listing query."""
+…  85 more lines not shown` });
+
+    add({ id: 'DataGrid', name: 'DataGrid', kind: 'cmp', file: 'web/components/DataGrid.tsx', ln: 88, s0: 88, loc: 204, cx: 15, fi: 7,
+      sig: 'export function DataGrid<T>({ rows, columns, onSort, onSelect }: DataGridProps<T>)',
+      doc: 'Virtualised table used by the invoice and dashboard pages.',
+      src: `export function DataGrid<T>({ rows, columns, onSort, onSelect }: DataGridProps<T>) {
+  const [sort, setSort] = useState<SortState | null>(null);
+…  202 more lines not shown` });
+
+    const ext = (id, name, pkg, fi) => add({ id, name, kind: 'ext', pkg, fi, file: pkg, ln: 0 });
+    ext('x_jwt_decode', 'jwt.decode', 'PyJWT', 3);
+    ext('x_jwt_encode', 'jwt.encode', 'PyJWT', 6);
+    ext('x_passlib', 'pwd_context.verify', 'passlib', 1);
+    ext('x_redis_setex', 'redis.setex', 'redis-py', 2);
+    ext('x_redis_exists', 'redis.exists', 'redis-py', 2);
+    ext('x_stripe', 'stripe.Webhook.construct_event', 'stripe', 1);
+    ext('x_pyd', 'InvoiceOut.model_validate', 'pydantic', 14);
+    ext('x_httpx', 'httpx.post', 'httpx', 3);
+
+    const E = [
+      ['login', 'authenticate_user', 44], ['login', 'create_access_token', 47], ['login', 'create_refresh_token', 48], ['login', 'record_event', 49],
+      ['authenticate_user', 'get_user_by_email', 60], ['authenticate_user', 'verify_password', 65], ['authenticate_user', 'bump_failed_logins', 66],
+      ['verify_password', 'x_passlib', 21], ['bump_failed_logins', 'record_event', 108],
+      ['create_access_token', 'x_jwt_encode', 31], ['create_refresh_token', 'x_redis_setex', 64], ['create_refresh_token', 'x_jwt_encode', 65],
+      ['refresh', 'x_jwt_decode', 79], ['refresh', 'is_token_revoked', 80], ['refresh', 'get_user_by_id', 82], ['refresh', 'create_access_token', 83],
+      ['get_current_user', 'x_jwt_decode', 26], ['get_current_user', 'is_token_revoked', 29], ['get_current_user', 'get_user_by_id', 31],
+      ['is_token_revoked', 'x_redis_exists', 95], ['require_scope', 'get_current_user', 73],
+      ['get_invoice', 'require_scope', 89], ['get_invoice', 'get_invoice_for_user', 93], ['get_invoice', 'serialize_invoice', 94],
+      ['get_invoice_for_user', 'can_view_invoice', 52], ['serialize_invoice', 'x_pyd', 64],
+      ['list_invoices', 'get_current_user', 41], ['read_me', 'get_current_user', 19],
+      ['stripe_webhook', 'x_stripe', 36], ['stripe_webhook', 'mark_invoice_paid', 40], ['stripe_webhook', 'record_event', 42],
+      ['mark_invoice_paid', 'utcnow', 126], ['mark_invoice_paid', 'record_event', 127], ['mark_invoice_paid', 'send_receipt', 128],
+      ['send_receipt', 'x_httpx', 12]
+    ];
+    const out = {}, inn = {};
+    E.forEach(([a, b, ln]) => { (out[a] = out[a] || []).push({ id: b, ln }); (inn[b] = inn[b] || []).push({ id: a, ln }); });
+    Object.keys(N).forEach((id) => { N[id].fo = (out[id] || []).length; });
+
+    const F = [
+      ['a_auth', 'api', 'auth.py', 412, 'py'], ['a_inv', 'api', 'invoices.py', 688, 'py'], ['a_pay', 'api', 'payments.py', 356, 'py'], ['a_usr', 'api', 'users.py', 244, 'py'], ['a_deps', 'api', 'deps.py', 198, 'py'],
+      ['s_auth', 'services', 'auth.py', 520, 'py'], ['s_inv', 'services', 'invoices.py', 1140, 'py'], ['s_bill', 'services', 'billing.py', 870, 'py'], ['s_rep', 'services', 'reports.py', 760, 'py'],
+      ['c_sec', 'core', 'security.py', 210, 'py'], ['c_tok', 'core', 'tokens.py', 280, 'py'], ['c_pol', 'core', 'policy.py', 330, 'py'], ['c_cfg', 'core', 'config.py', 160, 'py'],
+      ['r_usr', 'repo', 'users.py', 340, 'py'], ['r_inv', 'repo', 'invoices.py', 910, 'py'],
+      ['sc_inv', 'schemas', 'invoices.py', 620, 'py'], ['sc_usr', 'schemas', 'users.py', 280, 'py'],
+      ['e_aud', 'events', 'audit.py', 190, 'py'],
+      ['t_mail', 'tasks', 'email.py', 240, 'py'], ['t_rec', 'tasks', 'reconcile.py', 480, 'py'],
+      ['w_inv', 'web/pages', 'InvoiceDetail.tsx', 640, 'ts'], ['w_dash', 'web/pages', 'Dashboard.tsx', 720, 'ts'], ['w_login', 'web/pages', 'Login.tsx', 310, 'ts'],
+      ['w_tbl', 'web/components', 'InvoiceTable.tsx', 560, 'ts'], ['w_grid', 'web/components', 'DataGrid.tsx', 910, 'ts'], ['w_pdf', 'web/components', 'pdfExport.js', 340, 'js'],
+      ['h_auth', 'web/hooks', 'useAuth.ts', 220, 'ts'], ['h_inv', 'web/hooks', 'useInvoices.ts', 280, 'ts'],
+      ['x_client', 'web/api', 'client.ts', 360, 'ts']
+    ].map(([id, folder, name, loc, lang]) => ({ id, folder, name, loc, lang, path: folder + '/' + name }));
+    const FM = {}; F.forEach((f) => { FM[f.id] = f; });
+    const FI = [
+      ['a_auth', 's_auth'], ['a_auth', 'c_tok'], ['a_auth', 'sc_usr'], ['a_auth', 'a_deps'],
+      ['a_inv', 's_inv'], ['a_inv', 'a_deps'], ['a_inv', 'sc_inv'],
+      ['a_pay', 's_bill'], ['a_pay', 's_inv'], ['a_pay', 'e_aud'], ['a_pay', 'a_deps'],
+      ['a_usr', 'r_usr'], ['a_usr', 'sc_usr'], ['a_usr', 'a_deps'],
+      ['a_deps', 'c_tok'], ['a_deps', 'r_usr'], ['a_deps', 'c_cfg'],
+      ['s_auth', 'r_usr'], ['s_auth', 'c_sec'], ['s_auth', 'c_tok'], ['s_auth', 'e_aud'],
+      ['s_inv', 'r_inv'], ['s_inv', 'c_pol'], ['s_inv', 'e_aud'], ['s_inv', 't_mail'], ['s_inv', 'sc_inv'],
+      ['s_bill', 's_inv'], ['s_bill', 'r_inv'], ['s_bill', 'e_aud'], ['s_bill', 'c_cfg'],
+      ['s_rep', 'r_inv'], ['s_rep', 'sc_inv'],
+      ['c_tok', 'c_cfg'], ['c_sec', 'c_cfg'], ['r_inv', 'sc_inv'], ['r_usr', 'sc_usr'], ['t_mail', 'c_cfg'],
+      ['t_rec', 's_bill'], ['t_rec', 'r_inv'],
+      ['w_inv', 'w_tbl'], ['w_inv', 'h_inv'], ['w_inv', 'h_auth'], ['w_inv', 'w_pdf'],
+      ['w_dash', 'w_grid'], ['w_dash', 'h_inv'], ['w_login', 'h_auth'], ['w_tbl', 'w_grid'],
+      ['h_auth', 'x_client'], ['h_inv', 'x_client']
+    ];
+    const FO = {
+      'api': { x: 140, y: 200, g: 'py' }, 'services': { x: 420, y: 200, g: 'py' }, 'core': { x: 720, y: 90, g: 'py' },
+      'repo': { x: 740, y: 300, g: 'py' }, 'schemas': { x: 960, y: 215, g: 'py' }, 'events': { x: 420, y: 420, g: 'py' },
+      'tasks': { x: 740, y: 475, g: 'py' }, 'web/components': { x: 140, y: 620, g: 'ts' }, 'web/pages': { x: 420, y: 620, g: 'ts' },
+      'web/hooks': { x: 740, y: 620, g: 'ts' }, 'web/api': { x: 960, y: 620, g: 'ts' }
+    };
+    Object.keys(FO).forEach((k) => {
+      const fs = F.filter((f) => f.folder === k);
+      FO[k].id = k; FO[k].files = fs.length; FO[k].loc = fs.reduce((s, f) => s + f.loc, 0);
+    });
+    const FE = {};
+    FI.forEach(([a, b]) => { const fa = FM[a].folder, fb = FM[b].folder; if (fa !== fb) { const k = fa + '>' + fb; FE[k] = (FE[k] || 0) + 1; } });
+    const FEL = Object.keys(FE).map((k) => { const p = k.split('>'); return { a: p[0], b: p[1], n: FE[k] }; });
+
+    const libs = [['fastapi', 58], ['sqlalchemy', 46], ['pydantic', 41], ['react', 38], ['@tanstack/react-query', 14], ['zod', 12], ['redis-py', 6], ['celery', 5], ['PyJWT', 4], ['httpx', 3], ['stripe', 2]];
+
+    this._d = { N, E, out, inn, F, FM, FI, FO, FEL, libs, total: { files: 214, lines: 31482, fns: 612, classes: 74, eps: 38 } };
+    return this._d;
+  }
+
+  /* --------------------------------------------------------------- helpers */
+  cite(n) { return n.file + (n.ln ? ':' + n.ln : ''); }
+  rich(text) {
+    return String(text).split('`').map((t, i) => ({ t, s: i % 2 ? 'font-family:\'Geist Mono\',monospace; font-size:12px; color:#7fb0b4' : '' })).filter((p) => p.t !== '');
+  }
+  hl(line) {
+    const KW = /^(def|return|if|elif|else|not|is|None|True|False|raise|try|except|import|from|async|await|class|with|yield|and|or|in|for|as|const|let|export|function|new|type)$/;
+    const re = /(f?"[^"]*"|f?'[^']*'|#.*$|\/\/.*$|@[\w.]+|[A-Za-z_]\w*|\d+|\s+|.)/g;
+    const raw = []; let m; let prev = '';
+    while ((m = re.exec(line))) {
+      const t = m[0]; let c = '#dce3ea';
+      if (/^f?["']/.test(t)) c = '#a7c4a5';
+      else if (t[0] === '#' || t.slice(0, 2) === '//') c = '#7d8a97';
+      else if (t[0] === '@') c = '#b9c79a';
+      else if (/^[A-Za-z_]/.test(t) && (prev === 'def' || prev === 'class')) c = '#7fb0b4';
+      else if (KW.test(t)) c = '#a79fc7';
+      else if (/^\d+$/.test(t)) c = '#d49580';
+      if (!/^\s+$/.test(t)) prev = t;
+      raw.push({ t, s: 'color:' + c });
+    }
+    const merged = [];
+    raw.forEach((p) => { const l = merged[merged.length - 1]; if (l && l.s === p.s) l.t += p.t; else merged.push({ t: p.t, s: p.s }); });
+    return merged.length ? merged : [{ t: ' ', s: '' }];
+  }
+  badgeFor(n) {
+    if (n.kind === 'ep') return { t: 'EP', s: 'background:#1d231a;color:#b9c79a;border:1px solid #5c6b49' };
+    if (n.kind === 'ext') return { t: 'EXT', s: 'background:#161b21;color:#94a1ae;border:1px dashed #5b6773' };
+    if (n.kind === 'cmp') return { t: 'TSX', s: 'background:#231f45;color:#a79fc7;border:1px solid #5a5580' };
+    return { t: 'FN', s: 'background:#16292d;color:#7fb0b4;border:1px solid #3b6a70' };
+  }
+  authTone(a) { return a === 'public' ? '#d98a62' : a === 'authentication' ? '#a79fc7' : '#7fb0b4'; }
+  toastMsg(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({ toast: null }), 3200);
+  }
+  focusId(id) { setTimeout(() => { const el = document.getElementById(id); if (el) el.focus(); }, 30); }
+  selectFn(id, tab) { this.setState({ sel: { k: 'fn', id }, hlLine: null, tab: tab || this.state.tab }); }
+  openFlow(id) { this.setState({ view: 'flow', flowRoot: id, sel: { k: 'fn', id }, hlLine: null, askOpen: false, palOpen: false, hover: null }); }
+  goCite(id, ln) { this.setState({ sel: { k: 'fn', id }, tab: 'source', hlLine: ln, askOpen: false }); }
+  closeAll() { this.setState({ repoOpen: false, exportOpen: false, palOpen: false, askOpen: false }); try { const a = document.activeElement; if (a && a.tagName === 'INPUT') a.blur(); } catch (e) {} }
+
+  /* ---------------------------------------------------------- flow layout */
+  flowLayout() {
+    const d = this.D(); const s = this.state; const root = s.flowRoot; const mode = s.flowMode; const depth = s.depth;
+    const calls = new Set(), callers = new Set();
+    const bfs = (adj, set) => {
+      let fr = [root]; const seen = {}; seen[root] = true;
+      for (let k = 1; k <= depth; k++) {
+        const nx = [];
+        fr.forEach((id) => (adj[id] || []).forEach((t) => { if (!seen[t.id]) { seen[t.id] = true; set.add(t.id); nx.push(t.id); } }));
+        fr = nx;
+      }
+    };
+    if (mode !== 'callers') bfs(d.out, calls);
+    if (mode !== 'calls') bfs(d.inn, callers);
+    callers.forEach((id) => calls.delete(id));
+    const V = new Set([root]); calls.forEach((i) => V.add(i)); callers.forEach((i) => V.add(i));
+    const edgesAll = d.E.filter((e) => V.has(e[0]) && V.has(e[1]));
+    const rank = {}; rank[root] = 0;
+    for (let it = 0; it < V.size + 1; it++) {
+      calls.forEach((id) => { let r = 1; edgesAll.forEach((e) => { if (e[1] === id && rank[e[0]] !== undefined && (e[0] === root || calls.has(e[0]))) r = Math.max(r, rank[e[0]] + 1); }); rank[id] = r; });
+      callers.forEach((id) => { let r = -1; edgesAll.forEach((e) => { if (e[0] === id && rank[e[1]] !== undefined && (e[1] === root || callers.has(e[1]))) r = Math.min(r, rank[e[1]] - 1); }); rank[id] = r; });
+    }
+    const edges = edgesAll.filter((e) => rank[e[1]] > rank[e[0]]);
+    const NW = 248, COL = 350, GAP = 24, PAD = 44;
+    const H = (id) => (d.N[id].kind === 'ext' ? 84 : 134);
+    const byRank = {}; V.forEach((id) => { (byRank[rank[id]] = byRank[rank[id]] || []).push(id); });
+    const rks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
+    const minR = rks[0], maxR = rks[rks.length - 1];
+    const colH = (ids) => ids.reduce((sum, id) => sum + H(id), 0) + GAP * (ids.length - 1);
+    const inner = Math.max.apply(null, rks.map((r) => colH(byRank[r])));
+    const place = {}; const yc = {};
+    const midY = PAD + inner / 2;
+    const layoutCol = (r, ids) => { let y = midY - colH(ids) / 2; ids.forEach((id) => { place[id] = { x: PAD + (r - minR) * COL, y }; yc[id] = y + H(id) / 2; y += H(id) + GAP; }); };
+    layoutCol(0, byRank[0]);
+    const order = [];
+    for (let r = 1; r <= maxR; r++) order.push(r);
+    for (let r = -1; r >= minR; r--) order.push(r);
+    order.forEach((r) => {
+      const ids = byRank[r].slice();
+      const key = (id) => { const ys = []; edges.forEach((e) => { const o = r > 0 ? e[0] : e[1]; const me = r > 0 ? e[1] : e[0]; if (me === id && yc[o] !== undefined) ys.push(yc[o]); }); return ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : 1e9; };
+      ids.sort((a, b) => key(a) - key(b));
+      layoutCol(r, ids);
+    });
+    const W = PAD * 2 + (maxR - minR) * COL + NW;
+    const Ht = PAD * 2 + inner;
+    return { V, edges, rank, place, H, NW, W, Ht, root };
+  }
+
+  /* ---------------------------------------------------------- arch layout */
+  archLayout() {
+    const d = this.D(); const path = this.state.archPath;
+    const nodes = []; const edgeAgg = {};
+    const sq = Math.sqrt;
+    if (!path) {
+      Object.keys(d.FO).forEach((k) => { const f = d.FO[k]; nodes.push({ id: k, kind: 'folder', x: f.x, y: f.y, r: 16 + sq(f.loc) * 1.15, g: f.g, title: k, sub: f.files + ' files · ' + f.loc.toLocaleString('en-US') + ' loc', inner: f.loc >= 1000 ? (f.loc / 1000).toFixed(1) + 'k' : '', ghost: false });
+      });
+      d.FEL.forEach((e) => { edgeAgg[e.a + '>' + e.b] = { a: e.a, b: e.b, n: e.n }; });
+    } else {
+      const files = d.F.filter((f) => f.folder === path); const ids = {}; files.forEach((f) => { ids[f.id] = 1; });
+      const n = files.length; const cols = Math.min(n, 3); const rows = Math.ceil(n / cols);
+      files.forEach((f, i) => { const c = i % cols, r = Math.floor(i / cols); const rowCount = r === rows - 1 ? n - r * cols : cols; const cc = c + (cols - rowCount) / 2;
+        nodes.push({ id: f.id, kind: 'file', x: 520 + (cc - (cols - 1) / 2) * 240, y: 380 + (r - (rows - 1) / 2) * 210, r: 16 + sq(f.loc), g: f.lang === 'py' ? 'py' : 'ts', title: f.name, sub: f.loc.toLocaleString('en-US') + ' loc', inner: f.loc >= 500 ? String(f.loc) : '', ghost: false }); });
+      const L = {}, R = {};
+      const bump = (a, b) => { const k = a + '>' + b; edgeAgg[k] = edgeAgg[k] || { a, b, n: 0 }; edgeAgg[k].n += 1; };
+      d.FI.forEach(([a, b]) => {
+        if (ids[a] && ids[b]) bump(a, b);
+        else if (ids[b] && !ids[a]) { const fo = d.FM[a].folder; L[fo] = 1; bump('L:' + fo, b); }
+        else if (ids[a] && !ids[b]) { const fo = d.FM[b].folder; R[fo] = 1; bump(a, 'R:' + fo); }
+      });
+      const ghosts = (set, prefix, x, label) => { const ks = Object.keys(set); ks.forEach((k, i) => { const f = d.FO[k];
+        nodes.push({ id: prefix + k, kind: 'folder', real: k, x, y: 760 * (i + 1) / (ks.length + 1), r: 16 + sq(f.loc) * 0.6, g: f.g, title: k, sub: label, inner: '', ghost: true }); }); };
+      ghosts(L, 'L:', 110, 'imports this folder');
+      ghosts(R, 'R:', 930, 'imported from here');
+    }
+    return { nodes, edges: Object.keys(edgeAgg).map((k) => edgeAgg[k]) };
+  }
+
+  /* ---------------------------------------------------------------- treemap */
+  squarify(items, x, y, w, h) {
+    const total = items.reduce((s, i) => s + i.v, 0); const k = (w * h) / total;
+    let rem = items.map((i) => Object.assign({}, i, { a: i.v * k })); const rects = [];
+    const worst = (row, side) => { const s = row.reduce((a, b) => a + b.a, 0); const mx = Math.max.apply(null, row.map((r) => r.a)); const mn = Math.min.apply(null, row.map((r) => r.a)); return Math.max((side * side * mx) / (s * s), (s * s) / (side * side * mn)); };
+    let X = x, Y = y, W = w, Hh = h;
+    while (rem.length) {
+      const side = Math.min(W, Hh); let row = [rem[0]]; let i = 1;
+      while (i < rem.length) { const nx = row.concat([rem[i]]); if (worst(nx, side) <= worst(row, side)) { row = nx; i++; } else break; }
+      const s = row.reduce((a, b) => a + b.a, 0);
+      if (W >= Hh) { const cw = s / Hh; let yy = Y; row.forEach((r) => { const hh = r.a / cw; rects.push(Object.assign({}, r, { x: X, y: yy, w: cw, h: hh })); yy += hh; }); X += cw; W -= cw; }
+      else { const rh = s / W; let xx = X; row.forEach((r) => { const ww = r.a / rh; rects.push(Object.assign({}, r, { x: xx, y: Y, w: ww, h: rh })); xx += ww; }); Y += rh; Hh -= rh; }
+      rem = rem.slice(row.length);
+    }
+    return rects;
+  }
+
+  /* ---------------------------------------------------------------- answers */
+  answer(qRaw) {
+    const d = this.D(); const q = qRaw.trim(); const ql = q.toLowerCase(); const N = d.N;
+    const C = (id, ln) => ({ id, ln: ln || N[id].ln });
+    let lines = null;
+    if (/webhook|stripe|payment/.test(ql)) lines = [
+      { text: '`stripe_webhook` handles POST /payments/webhook and is the one public endpoint among the indexed flows.', cites: [C('stripe_webhook', 31)] },
+      { text: 'It verifies the Stripe signature with `stripe.Webhook.construct_event` and returns 400 if that fails.', cites: [C('stripe_webhook', 36)] },
+      { text: 'Paid events go to `mark_invoice_paid`, which is idempotent, writes an audit row and queues the receipt email.', cites: [C('stripe_webhook', 40), C('mark_invoice_paid', 127), C('mark_invoice_paid', 128)] }
+    ];
+    else if (/public|unauth|anonymous|no auth|open endpoint/.test(ql)) lines = [
+      { text: '8 of 38 endpoints are public. Of the flows indexed here, `stripe_webhook` is public and checks a Stripe signature instead of a user token.', cites: [C('stripe_webhook', 36)] },
+      { text: '`login` and `refresh` sit outside the token guard on purpose. They are the endpoints that issue and rotate tokens.', cites: [C('login', 42), C('refresh', 77)] }
+    ];
+    else if (/complex|risky|hotspot|hardest|scary/.test(ql)) {
+      const top = Object.keys(N).map((k) => N[k]).filter((n) => n.kind !== 'ext').sort((a, b) => b.cx - a.cx).slice(0, 3);
+      lines = top.map((n) => ({ text: '`' + n.name + '` has cyclomatic complexity ' + n.cx + ' across ' + n.loc + ' lines.', cites: [C(n.id)] }));
+    }
+    else if (/guard|protect|permission|scope|role|authoriz|who can/.test(ql)) lines = [
+      { text: 'Token auth is `get_current_user`, used by 31 call sites. Scope checks are `require_scope`, used by 12.', cites: [C('get_current_user', 23), C('require_scope', 71)] },
+      { text: 'Object-level access is decided in `can_view_invoice`: admins, the owner, or billing users on non-draft invoices.', cites: [C('can_view_invoice', 12), C('get_invoice_for_user', 52)] }
+    ];
+    else if (/login|password|sign.?in|credential|lockout|lock/.test(ql)) lines = [
+      { text: 'POST /auth/login is handled by `login`. It returns 401 when `authenticate_user` finds no match.', cites: [C('login', 42), C('login', 44)] },
+      { text: 'Passwords are checked in `authenticate_user` through `verify_password`. Five failures lock the account for the lockout window.', cites: [C('authenticate_user', 65), C('bump_failed_logins', 106)] },
+      { text: 'On success it signs an access token and a refresh token, then writes an `auth.login` audit event.', cites: [C('login', 47), C('login', 48), C('login', 49)] }
+    ];
+    else if (/jwt|token|bearer|session/.test(ql)) lines = [
+      { text: 'Bearer tokens are decoded in `get_current_user` with `jwt.decode` (HS256, shared secret).', cites: [C('get_current_user', 26)] },
+      { text: 'Revoked tokens are rejected right after, using a Redis denylist lookup.', cites: [C('get_current_user', 29), C('is_token_revoked', 95)] },
+      { text: 'Tokens are minted in `create_access_token` and `create_refresh_token`.', cites: [C('create_access_token', 31), C('create_refresh_token', 65)] }
+    ];
+    if (!lines) {
+      const toks = ql.split(/[^a-z0-9_]+/).filter((t) => t.length > 2 && !/^(the|and|where|what|how|does|are|for|with|this|that)$/.test(t));
+      const scored = Object.keys(N).map((k) => N[k]).map((n) => { const hay = (n.name + ' ' + (n.route || '') + ' ' + n.file + ' ' + n.doc).toLowerCase(); let sc = 0; toks.forEach((t) => { if (hay.indexOf(t) >= 0) sc += n.name.toLowerCase().indexOf(t) >= 0 ? 3 : 1; }); return { n, sc }; }).filter((x) => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, 4);
+      lines = scored.length ? scored.map((x) => ({ text: '`' + x.n.name + '`' + (x.n.doc ? ': ' + x.n.doc : ' in ' + x.n.file + '.'), cites: [C(x.n.id)] }))
+        : [{ text: 'Nothing in the index matches that. Try a function name, a route such as /auth/login, or a word from a docstring.', cites: [] }];
+    }
+    return { q, lines };
+  }
+
+  /* ------------------------------------------------------------- inspector */
+  inspector() {
+    const d = this.D(); const s = this.state; const sel = s.sel; const R = this.rich.bind(this);
+    const res = { badges: [], title: '', sub: '', doc: '', sig: '', metrics: [], lists: [], actions: [], srcHead: '', srcNote: '', src: [], ev: [], evNote: '', ex: [], aiBody: '' };
+    const fnRow = (id, ln) => { const n = d.N[id]; return { name: n.name, nameStyle: 'font-size:12.5px;' + (n.kind === 'ext' ? 'color:#94a1ae' : ''), meta: n.kind === 'ext' ? n.pkg + ' · external' : this.cite(n) + (ln ? ' (call L' + ln + ')' : ''), click: () => this.selectFn(id) }; };
+    const metric = (k, v, tone) => ({ k, v, s: 'font-size:18px;font-weight:500;' + (tone ? 'color:' + tone : '') });
+    const srcFrom = (text, s0, marks) => text.split('\n').map((line, i) => {
+      const elided = line.charAt(0) === '…';
+      const n = s0 + i; const hit = marks[n];
+      return { n: elided ? '' : String(n), parts: elided ? [{ t: line, s: 'color:#7d8a97;font-style:italic' }] : this.hl(line), rowStyle: 'display:flex;padding:0 10px 0 0;' + (hit ? 'background:#1d231a;box-shadow:inset 2px 0 0 #b9c79a' : '') };
+    });
+    if (sel.k === 'fn') {
+      const n = d.N[sel.id]; const outs = d.out[n.id] || []; const ins = d.inn[n.id] || [];
+      const b = this.badgeFor(n); const bs = 'font-size:10.5px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:4px;';
+      res.badges.push({ t: b.t, s: bs + b.s });
+      if (n.auth) res.badges.push({ t: n.auth.toUpperCase(), s: bs + 'background:#161b21;color:' + this.authTone(n.auth) + ';border:1px solid #2d3742' });
+      if (n.guard) res.badges.push({ t: 'AUTH GUARD', s: bs + 'background:#161b21;color:#7fb0b4;border:1px solid #3b6a70' });
+      res.title = n.kind === 'ep' ? n.route : n.name;
+      res.sub = n.kind === 'ext' ? n.pkg + ' · unresolved external call' : this.cite(n) + (n.kind === 'ep' ? ' · ' + n.name : '');
+      res.doc = n.doc; res.sig = n.kind === 'ext' ? '' : n.sig;
+      if (n.kind === 'ext') {
+        res.metrics = [metric('Callers in repo', n.fi), metric('Package', n.pkg)];
+        res.metrics[1].s = 'font-size:14px;font-weight:500;padding-top:3px';
+        res.doc = 'Defined outside the indexed source, so there is nothing to descend into. It is drawn as a dashed node in call flows.';
+      } else {
+        res.metrics = [metric('Lines', n.loc), metric('Complexity', n.cx, n.cx >= 10 ? '#d98a62' : n.cx >= 6 ? '#cfae6a' : '#8fb996'), metric('Fan-in', n.kind === 'ep' ? 'routed' : n.fi), metric('Fan-out', n.fo)];
+        if (n.kind === 'ep') res.metrics[2].s = 'font-size:14px;font-weight:500;padding-top:3px';
+      }
+      if (outs.length) res.lists.push({ title: 'Calls · ' + outs.length, rows: outs.map((o) => fnRow(o.id, o.ln)) });
+      if (ins.length) res.lists.push({ title: 'Called by · ' + ins.length + (n.fi > ins.length ? ' of ' + n.fi : ''), rows: ins.map((o) => fnRow(o.id, o.ln)) });
+      if (!outs.length && !ins.length && n.kind !== 'ext') res.lists.push({ title: 'Calls', rows: [{ name: 'Not part of an indexed flow', nameStyle: 'font-size:12px;color:#94a1ae', meta: '', click: () => {} }] });
+      res.actions = [{ label: 'Open call flow from here', click: () => this.openFlow(n.id) }];
+      // source
+      if (n.kind === 'ext') { res.srcHead = n.pkg + ' · site-packages'; res.srcNote = 'This call resolves to a third-party package, so its source is not in the index.'; }
+      else {
+        const marks = {}; marks[n.ln] = 1; (d.inn[n.id] || []); if (s.hlLine) marks[s.hlLine] = 1;
+        res.srcHead = this.cite(n) + ' · ' + n.loc + ' lines';
+        res.src = srcFrom(n.src, n.s0, marks);
+        res.srcNote = s.hlLine ? 'Highlighted: the cited line at ' + n.file + ':' + s.hlLine + '.' : 'Highlighted: the definition line. Click any cited file:line to jump here.';
+      }
+      // evidence
+      const mkParts = (id, ln) => { const t = d.N[id]; if (!t || !t.src) return [{ t: '', s: '' }]; const line = (t.src.split('\n')[ln - t.s0] || '').trim(); return this.hl(line); };
+      if (ins.length) res.ev.push({ title: 'Call sites into ' + n.name, items: ins.map((o) => { const c = d.N[o.id]; return { cite: c.file + ':' + o.ln, who: 'in ' + c.name, parts: mkParts(o.id, o.ln), click: () => this.goCite(o.id, o.ln) }; }) });
+      if (outs.length) res.ev.push({ title: 'Call sites inside ' + n.name, items: outs.map((o) => { const t = d.N[o.id]; return { cite: n.file + ':' + o.ln, who: '→ ' + t.name, parts: mkParts(n.id, o.ln), click: () => this.goCite(n.id, o.ln) }; }) });
+      if (!ins.length && !outs.length) res.ev.push({ title: 'Definition', items: [{ cite: this.cite(n), who: n.name, parts: this.hl(n.sig), click: () => this.goCite(n.id, n.ln) }] });
+      res.evNote = n.kind === 'ext' ? 'Each row cites the line that makes the call. The callee itself is outside the index.' : 'Every claim in this inspector is backed by a row here. Click a citation to open the line.';
+      // explain
+      const ex = [];
+      const what = n.kind === 'ep' ? 'an endpoint handler' : n.kind === 'cmp' ? 'a React component' : n.kind === 'ext' ? 'an external function' : 'a function';
+      ex.push('`' + n.name + '` is ' + what + (n.kind === 'ext' ? ' from `' + n.pkg + '`, called from ' + n.fi + ' place' + (n.fi === 1 ? '' : 's') + '.' : ' defined at `' + this.cite(n) + '` (' + n.loc + ' lines).'));
+      if (n.kind === 'ep') ex.push('Route `' + n.route + '`, classified ' + n.auth.toUpperCase() + ': ' + n.note);
+      if (n.kind !== 'ext') {
+        if (outs.length) { const ext = outs.filter((o) => d.N[o.id].kind === 'ext'); ex.push('It calls ' + outs.length + ': ' + outs.map((o) => '`' + d.N[o.id].name + '`').join(', ') + (ext.length ? '. ' + ext.length + ' of those ' + (ext.length === 1 ? 'is' : 'are') + ' unresolved external calls.' : '.')); }
+        else ex.push('It makes no calls into other indexed code.');
+        ex.push(n.kind === 'ep' ? 'Nothing calls it directly. The router invokes it.' : 'It is called from ' + n.fi + ' place' + (n.fi === 1 ? '' : 's') + (ins.length < n.fi ? ', ' + ins.length + ' of them shown in the call graph.' : '.'));
+        ex.push('Cyclomatic complexity is ' + n.cx + ', which is ' + (n.cx <= 5 ? 'low' : n.cx <= 10 ? 'moderate' : 'high') + (n.cx > 10 ? '. Read it carefully before changing it.' : '.'));
+        if (n.guard) ex.push('It is an auth guard used by ' + n.fi + ' callers. A change here changes who gets in.');
+        else if (n.kind === 'ep') {
+          let found = null; const seen = { [n.id]: [n.id] }; let fr = [n.id];
+          while (fr.length && !found) { const nx = []; fr.forEach((id) => (d.out[id] || []).forEach((o) => { if (!seen[o.id]) { seen[o.id] = seen[id].concat([o.id]); if (d.N[o.id].guard && !found) found = seen[o.id]; nx.push(o.id); } })); fr = nx; }
+          ex.push(found ? 'Guard on the path: ' + found.map((i) => '`' + d.N[i].name + '`').join(' → ') + ' (`' + this.cite(d.N[found[found.length - 1]]) + '`).' : 'No auth guard on any indexed call path.');
+        }
+      }
+      res.ex = ex;
+      const top = outs.map((o) => d.N[o.id]).filter((t) => t.kind !== 'ext').sort((a, b) => b.cx - a.cx)[0];
+      res.aiBody = n.kind === 'ext' ? '`' + n.name + '` is a library call, so there is no project code to summarise.' : (n.doc || 'This symbol has no docstring.') + (outs.length ? ' It hands work to ' + outs.length + ' callee' + (outs.length === 1 ? '' : 's') + (top ? ', and the most involved is `' + top.name + '` (complexity ' + top.cx + ').' : '.') : '');
+    }
+    else if (sel.k === 'file') {
+      const f = d.FM[sel.id]; const imps = d.FI.filter((e) => e[0] === f.id).map((e) => d.FM[e[1]]); const by = d.FI.filter((e) => e[1] === f.id).map((e) => d.FM[e[0]]);
+      const defs = Object.keys(d.N).map((k) => d.N[k]).filter((n) => n.file === f.path);
+      const bs = 'font-size:10.5px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:4px;';
+      res.badges.push({ t: 'FILE', s: bs + 'background:#161b21;color:#dce3ea;border:1px solid #2d3742' });
+      res.badges.push({ t: f.lang === 'py' ? 'PYTHON' : f.lang === 'ts' ? 'TYPESCRIPT' : 'JAVASCRIPT', s: bs + 'background:#161b21;color:' + (f.lang === 'py' ? '#7fb0b4' : f.lang === 'ts' ? '#a79fc7' : '#b9c79a') + ';border:1px solid #2d3742' });
+      res.title = f.name; res.sub = f.path;
+      res.metrics = [metric('Lines', f.loc.toLocaleString('en-US')), metric('Defines', defs.length || '—'), metric('Imports', imps.length), metric('Imported by', by.length)];
+      const frow = (x) => ({ name: x.path, nameStyle: 'font-size:12px', meta: x.loc + ' loc', click: () => this.setState({ sel: { k: 'file', id: x.id } }) });
+      if (defs.length) res.lists.push({ title: 'Defines · ' + defs.length, rows: defs.map((n) => fnRow(n.id)) });
+      if (imps.length) res.lists.push({ title: 'Imports · ' + imps.length, rows: imps.map(frow) });
+      if (by.length) res.lists.push({ title: 'Imported by · ' + by.length, rows: by.map(frow) });
+      res.actions = [{ label: 'Show folder in map', click: () => this.setState({ view: 'arch', archPath: f.folder }) }];
+      const stmt = (x) => f.lang === 'py' ? 'from app.' + x.folder.replace('/', '.') + ' import ' + x.name.replace(/\.\w+$/, '') : 'import { … } from \'@/' + x.folder.replace('web/', '') + '/' + x.name.replace(/\.\w+$/, '') + '\'';
+      res.srcHead = f.path + ' · import block (first lines)';
+      res.src = imps.map((x, i) => ({ n: String(i + 2), parts: this.hl(stmt(x)), rowStyle: 'display:flex;padding:0 10px 0 0' }));
+      res.srcNote = imps.length ? 'Only the import block is indexed for a file. Open a function from the Defines list to read its source.' : 'This file imports nothing from the project.';
+      const ev = imps.map((x, i) => ({ cite: f.path + ':' + (i + 2), who: 'imports ' + x.path, parts: this.hl(stmt(x)), click: () => this.setState({ sel: { k: 'file', id: x.id } }) }));
+      if (ev.length) res.ev.push({ title: 'Imports in ' + f.name, items: ev });
+      const inEv = by.map((x) => { const idx = d.FI.filter((e) => e[0] === x.id).findIndex((e) => e[1] === f.id); return { cite: x.path + ':' + (idx + 2), who: x.name, parts: this.hl(x.lang === 'py' ? 'from app.' + f.folder.replace('/', '.') + ' import ' + f.name.replace(/\.\w+$/, '') : 'import { … } from \'@/' + f.folder.replace('web/', '') + '/' + f.name.replace(/\.\w+$/, '') + '\''), click: () => this.setState({ sel: { k: 'file', id: x.id } }) }; });
+      if (inEv.length) res.ev.push({ title: 'Imported by', items: inEv });
+      if (!res.ev.length) res.ev.push({ title: 'Imports', items: [] });
+      res.evNote = 'Line numbers are positions inside the import block.';
+      res.ex = ['`' + f.path + '` is a ' + (f.lang === 'py' ? 'Python' : f.lang === 'ts' ? 'TypeScript' : 'JavaScript') + ' module of ' + f.loc.toLocaleString('en-US') + ' lines.', imps.length ? 'It imports ' + imps.length + ' project module' + (imps.length === 1 ? '' : 's') + ': ' + imps.map((x) => '`' + x.path + '`').join(', ') + '.' : 'It has no project imports, so it sits at the bottom of the dependency order.', by.length ? 'It is imported by ' + by.length + ': ' + by.map((x) => '`' + x.path + '`').join(', ') + '.' : 'Nothing imports it. It is an entry point or dead code.', defs.length ? 'Indexed definitions: ' + defs.map((x) => '`' + x.name + '`').join(', ') + '.' : 'No functions from this file are in the call graph.'];
+      res.aiBody = 'This module is mostly ' + (by.length >= imps.length ? 'depended on by other code (' + by.length + ' importers)' : 'glue that pulls in other modules (' + imps.length + ' imports)') + '.';
+    }
+    else {
+      const k = sel.id; const fo = d.FO[k]; const files = d.F.filter((f) => f.folder === k);
+      const depsOut = d.FEL.filter((e) => e.a === k); const depsIn = d.FEL.filter((e) => e.b === k);
+      const bs = 'font-size:10.5px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:4px;';
+      res.badges.push({ t: 'FOLDER', s: bs + 'background:#161b21;color:#dce3ea;border:1px solid #2d3742' });
+      res.title = k + '/'; res.sub = fo.files + ' files · ' + fo.loc.toLocaleString('en-US') + ' lines';
+      res.metrics = [metric('Files', fo.files), metric('Lines', fo.loc.toLocaleString('en-US')), metric('Depends on', depsOut.length), metric('Used by', depsIn.length)];
+      res.lists.push({ title: 'Files', rows: files.slice().sort((a, b) => b.loc - a.loc).map((f) => ({ name: f.name, nameStyle: 'font-size:12.5px', meta: f.loc + ' loc', click: () => this.setState({ sel: { k: 'file', id: f.id } }) })) });
+      if (depsOut.length) res.lists.push({ title: 'Depends on', rows: depsOut.map((e) => ({ name: e.b + '/', nameStyle: 'font-size:12.5px', meta: e.n + ' import' + (e.n === 1 ? '' : 's'), click: () => this.setState({ sel: { k: 'folder', id: e.b } }) })) });
+      if (depsIn.length) res.lists.push({ title: 'Used by', rows: depsIn.map((e) => ({ name: e.a + '/', nameStyle: 'font-size:12.5px', meta: e.n + ' import' + (e.n === 1 ? '' : 's'), click: () => this.setState({ sel: { k: 'folder', id: e.a } }) })) });
+      res.actions = [{ label: 'Drill into files', click: () => this.setState({ view: 'arch', archPath: k }) }];
+      res.srcHead = k + '/ · file manifest';
+      res.src = files.slice().sort((a, b) => b.loc - a.loc).map((f) => ({ n: '', parts: [{ t: f.name.padEnd(22, ' ') + String(f.loc).padStart(5, ' ') + ' loc', s: 'color:#dce3ea' }], rowStyle: 'display:flex;padding:0 10px 0 12px' }));
+      res.srcNote = 'Folders have no source of their own. Pick a file to see its imports or a function to read its code.';
+      const items = [];
+      d.FI.forEach((e) => { const a = d.FM[e[0]], b = d.FM[e[1]]; if ((a.folder === k) !== (b.folder === k)) { const idx = d.FI.filter((x) => x[0] === a.id).findIndex((x) => x[1] === b.id); items.push({ cite: a.path + ':' + (idx + 2), who: a.folder === k ? 'out' : 'in', parts: [{ t: a.name + ' → ' + b.path, s: 'color:#dce3ea' }], click: () => this.setState({ sel: { k: 'file', id: a.id } }) }); } });
+      res.ev.push({ title: 'Imports crossing this folder boundary · ' + items.length, items: items.slice(0, 14) });
+      res.evNote = items.length > 14 ? 'Showing 14 of ' + items.length + '. Drill into the folder to see them per file.' : 'Each row is one import statement.';
+      res.ex = ['`' + k + '/` holds ' + fo.files + ' files and ' + fo.loc.toLocaleString('en-US') + ' lines (' + Math.round(fo.loc / d.total.lines * 100) + '% of the repo).', depsOut.length ? 'It depends on ' + depsOut.map((e) => '`' + e.b + '`').join(', ') + '.' : 'It depends on no other project folder.', depsIn.length ? 'It is used by ' + depsIn.map((e) => '`' + e.a + '`').join(', ') + '.' : 'No other project folder imports it.', 'Largest file: `' + files.slice().sort((a, b) => b.loc - a.loc)[0].path + '` at ' + files.slice().sort((a, b) => b.loc - a.loc)[0].loc + ' lines.'];
+      res.aiBody = '`' + k + '` is ' + (depsIn.length > depsOut.length ? 'a shared layer: more folders import it than it imports.' : 'a consumer layer: it imports more than it is imported.');
+    }
+    return res;
+  }
+
+  /* ================================================================ render */
+  renderVals() {
+    const s = this.state; const d = this.D(); const N = d.N;
+    const set = (o) => () => this.setState(o);
+    const v = {};
+
+    /* ---------- header ---------- */
+    v.repoOpen = s.repoOpen; v.repoName = s.repo; v.toggleRepo = () => this.setState({ repoOpen: !s.repoOpen, exportOpen: false, askOpen: false });
+    v.repos = [['ledgerline', 'indexed 2 min ago'], ['notes-sync', 'indexed 3 days ago'], ['kiln-web', 'not indexed']].map(([name, meta]) => ({ name, meta, click: () => { this.setState({ repoOpen: false, repo: name }); if (name !== 'ledgerline') this.toastMsg('Would load ' + name + ' from the index cache'); } }));
+    v.openFolder = () => { this.setState({ repoOpen: false }); this.toastMsg('Folder picker opens here'); };
+    v.indexing = s.indexing !== null; v.indexLabel = s.indexing !== null ? 'Indexing ' + Math.round(s.indexing) + '%' : 'Index project';
+    v.indexBarStyle = 'height:2px;background:#b9c79a;width:' + (s.indexing || 0) + '%';
+    v.startIndex = () => {
+      if (this.state.indexing !== null) return;
+      this.setState({ indexing: 0 });
+      const t = setInterval(() => {
+        const p = (this.state.indexing || 0) + 8 + Math.random() * 9;
+        if (p >= 100) { clearInterval(t); this.setState({ indexing: null }); this.toastMsg('Indexed 214 files, 612 functions in 3.2 s'); }
+        else this.setState({ indexing: p });
+      }, 170);
+    };
+    v.query = s.query;
+    v.onQuery = (e) => this.setState({ query: e.target.value, answer: null, askOpen: true, repoOpen: false, exportOpen: false });
+    v.onAskFocus = () => this.setState({ askOpen: true, repoOpen: false, exportOpen: false });
+    v.onAskKey = (e) => { if (e.key === 'Enter' && s.query.trim()) { e.preventDefault(); this.setState({ answer: this.answer(s.query), askOpen: true }); } };
+    const runAsk = (q) => () => this.setState({ query: q, answer: this.answer(q), askOpen: true });
+    v.askOpen = s.askOpen;
+    const ql = s.query.trim().toLowerCase();
+    v.showAnswer = !!s.answer; v.showMatches = !s.answer && ql.length > 0; v.showTry = !s.answer && ql.length === 0;
+    v.ansQ = s.answer ? s.answer.q : '';
+    v.ansLines = s.answer ? s.answer.lines.map((l) => ({ parts: this.rich(l.text), cites: l.cites.map((c) => ({ label: N[c.id].file + ':' + c.ln, click: () => this.goCite(c.id, c.ln) })) })) : [];
+    v.ansFoot = s.ai ? 'AI is on, but this answer was still built from the static index. Every claim cites a line.' : 'Answered from the static index. No model call, nothing left this machine.';
+    v.matches = ql ? Object.keys(N).map((k) => N[k]).filter((n) => (n.name + ' ' + (n.route || '') + ' ' + n.file).toLowerCase().indexOf(ql) >= 0).slice(0, 6).map((n) => ({ name: n.kind === 'ep' ? n.route : n.name, meta: n.kind === 'ext' ? n.pkg : this.cite(n), click: () => { this.selectFn(n.id); this.setState({ askOpen: false }); } })) : [];
+    v.tries = ['Where are tokens validated?', 'How does login work?', 'Which endpoints are public?', 'What are the riskiest functions?'].map((q) => ({ label: q, click: runAsk(q) }));
+
+    v.openPalette = () => { this.setState({ palOpen: true, palQ: '', repoOpen: false, exportOpen: false, askOpen: false }); this.focusId('rm-pal-input'); };
+    v.exportOpen = s.exportOpen; v.toggleExport = () => this.setState({ exportOpen: !s.exportOpen, repoOpen: false, askOpen: false });
+    v.exportItems = [['Markdown report', '.md', 'ledgerline-report.md'], ['JSON index', '.json', 'ledgerline-index.json'], ['Mermaid call graph', '.mmd', 'login-flow.mmd'], ['Citations as CSV', '.csv', 'citations.csv']].map(([label, ext, file]) => ({ label, ext, click: () => { this.setState({ exportOpen: false }); this.toastMsg('Saved ' + file); } }));
+    v.aiOn = s.ai; v.aiLabel = s.ai ? 'AI on' : 'AI off';
+    v.aiDotStyle = 'width:8px;height:8px;border-radius:50%;background:' + (s.ai ? '#8fb996;animation:rm-pulse 2s ease-in-out infinite' : '#5b6773');
+    v.aiTextStyle = 'color:' + (s.ai ? '#8fb996' : '#94a1ae');
+    v.toggleAI = () => { this.setState({ ai: !s.ai }); this.toastMsg(s.ai ? 'AI off: answers come from the static index only' : 'AI on: explanations can use a model, citations still required'); };
+    v.anyOpen = s.repoOpen || s.exportOpen || s.askOpen;
+    v.closeAll = () => this.closeAll();
+    v.stop = (e) => e.stopPropagation();
+
+    /* ---------- switcher ---------- */
+    v.viewTabs = [['overview', 'Overview'], ['arch', 'Architecture'], ['flow', 'Call flow']].map(([id, label]) => ({ label, cls: 'rm-vtab' + (s.view === id ? ' rm-vtab-on' : ''), current: s.view === id ? 'page' : 'false', click: set({ view: id, hover: null }) }));
+    v.statusLine = s.repo + ' · main · indexed 2 min ago · watching for changes';
+    v.viewOverview = s.view === 'overview'; v.viewArch = s.view === 'arch'; v.viewFlow = s.view === 'flow';
+
+    /* ---------- overview ---------- */
+    const T = d.total;
+    v.endpointCount = T.eps;
+    const ez = 1 - Math.pow(1 - s.count, 3); const cn = (x) => Math.round(x * ez).toLocaleString('en-US');
+    v.stats = [
+      { label: 'Files', value: cn(T.files), sub: '118 py · 85 ts/js · 11 other' },
+      { label: 'Lines', value: cn(T.lines), sub: 'code, excluding blanks' },
+      { label: 'Functions', value: cn(T.fns), sub: 'avg complexity 3.4' },
+      { label: 'Classes', value: cn(T.classes), sub: '41 models · 33 schemas' },
+      { label: 'Endpoints', value: cn(T.eps), sub: 'FastAPI routes' }
+    ];
+    v.startCards = ['login', 'get_invoice', 'stripe_webhook', 'get_current_user'].map((id) => { const n = N[id]; return { tag: n.kind === 'ep' ? n.route : 'guard · ' + this.cite(n), title: id === 'login' ? 'How credentials become tokens' : id === 'get_invoice' ? 'How a protected read is guarded' : id === 'stripe_webhook' ? 'The public endpoint' : 'The shared auth guard', desc: n.fo + ' direct call' + (n.fo === 1 ? '' : 's') + ' · complexity ' + n.cx + (n.fi > 0 ? ' · ' + n.fi + ' callers' : '') + (n.auth ? ' · ' + n.auth : ''), click: () => this.openFlow(id),
+      move: (e) => { const el = e.currentTarget; const r = el.getBoundingClientRect(); const px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5; el.style.transform = 'perspective(700px) rotateY(' + (px * 9).toFixed(2) + 'deg) rotateX(' + (-py * 9).toFixed(2) + 'deg) translateY(-3px)'; },
+      leave: (e) => { e.currentTarget.style.transform = ''; } }; });
+    const lang = [['Python', 18200, '#7fb0b4'], ['TypeScript', 10730, '#a79fc7'], ['JavaScript', 1640, '#cfae6a'], ['Config / SQL', 912, '#7d8a97']];
+    v.langSegs = lang.map(([n, l, c], li) => ({ style: 'height:100%;background:' + c + ';width:' + (l / T.lines * 100) + '%;transform-origin:left center;animation:rm-grow 1.1s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (800 + li * 150) + 'ms', title: n + ' ' + l.toLocaleString('en-US') + ' lines' }));
+    v.langLegend = lang.map(([n, l, c]) => ({ name: n, pct: (l / T.lines * 100).toFixed(1) + '%', dot: 'width:10px;height:10px;border-radius:2px;background:' + c }));
+    v.langNote = 'Backend is Python (FastAPI). The web client is TypeScript with one legacy JavaScript module.';
+    const auth = [['Authentication', 3, '#a79fc7', 'login, refresh, logout'], ['Protected', 27, '#7fb0b4', 'behind get_current_user or require_scope'], ['Public', 8, '#d98a62', 'no token guard on the path']];
+    v.authSegs = auth.map(([n, c, col], ai) => ({ style: 'height:100%;background:' + col + ';width:' + (c / T.eps * 100) + '%;transform-origin:left center;animation:rm-grow 1.1s cubic-bezier(.2,.8,.2,1) backwards' + (n === 'Public' ? ', rm-breathe 2.4s ease-in-out infinite' : '') + ';animation-delay:' + (800 + ai * 150) + 'ms' + (n === 'Public' ? ', 2s' : ''), title: n + ' ' + c }));
+    v.authRows = auth.map(([n, c, col, desc]) => ({ name: n, desc, count: c + ' · ' + Math.round(c / T.eps * 100) + '%', dot: 'width:10px;height:10px;border-radius:2px;background:' + col }));
+    const tmFiles = d.F.slice().sort((a, b) => b.loc - a.loc); const TW = 1000, TH = 340;
+    const rects = this.squarify(tmFiles.map((f) => ({ f, v: f.loc })), 0, 0, TW, TH);
+    const peak = {}; Object.keys(N).forEach((k) => { const n = N[k]; if (n.kind !== 'ext') peak[n.file] = Math.max(peak[n.file] || 1, n.cx); });
+    const pkMax = Math.max.apply(null, Object.keys(peak).map((k) => peak[k]).concat([2]));
+    const mixc = (a, b, t) => 'rgb(' + a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(',') + ')';
+    const heatOf = (f) => Math.pow(Math.max(0, Math.min(1, ((peak[f.path] || 1) - 1) / (pkMax - 1))), 0.85);
+    const heatCol = (f) => { const h = heatOf(f); return [mixc([21, 36, 44], [100, 56, 40], h), mixc([42, 74, 88], [217, 138, 98], h)]; };
+    v.tiles = rects.map((r, ti) => { const f = r.f; const c = heatCol(f); const hh = heatOf(f); const sel = s.sel.k === 'file' && s.sel.id === f.id;
+      return { style: 'left:' + (r.x / TW * 100) + '%;top:' + (r.y / TH * 100) + '%;width:' + (r.w / TW * 100) + '%;height:' + (r.h / TH * 100) + '%;animation:rm-pop .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (700 + ti * 45) + 'ms', inStyle: 'background:' + c[0] + ';box-shadow:inset 0 0 0 1px ' + (sel ? '#b9c79a' : c[1]) + (sel ? ',inset 0 0 0 2px #b9c79a' : '') + ';transition:filter .2s,opacity .25s;opacity:' + (s.tmHover && s.tmHover !== f.id ? 0.45 : 1) + (hh > 0.55 ? ';animation:rm-breathe ' + (2.4 + (ti % 4) * 0.5) + 's ease-in-out infinite;animation-delay:-' + (ti * 0.7).toFixed(1) + 's' : ''), label: r.w > 92 && r.h > 44, name: f.name, sub: f.loc.toLocaleString('en-US') + ' · ' + f.folder, title: f.path + ' · ' + f.loc.toLocaleString('en-US') + ' lines', enter: () => this.setState({ tmHover: f.id }), leave: () => this.setState({ tmHover: null }), click: () => this.setState({ sel: { k: 'file', id: f.id }, hlLine: null }) }; });
+    const tmSum = tmFiles.reduce((a, f) => a + f.loc, 0);
+    v.tmNote = 'Largest ' + tmFiles.length + ' files · ' + Math.round(tmSum / T.lines * 100) + '% of all lines';
+    const hf = s.tmHover ? d.FM[s.tmHover] : null;
+    v.tmRead = hf ? hf.path + ' · ' + hf.loc.toLocaleString('en-US') + ' lines · peak complexity ' + (peak[hf.path] || 1) : 'Hover a tile to read it';
+    v.tmLegend = [['Python', '#46787d'], ['TypeScript', '#6e6893'], ['JavaScript', '#8f7a45']].map(([n, c]) => ({ name: n, dot: 'width:12px;height:12px;border-radius:3px;background:' + c }));
+    const internal = Object.keys(N).map((k) => N[k]).filter((n) => n.kind !== 'ext');
+    const hotRow = (list, metric) => list.slice(0, 5).map((n, i) => ({ rank: String(i + 1), name: n.name, where: this.cite(n), metric: metric(n), click: () => this.selectFn(n.id, 'summary') }));
+    v.hotCols = [
+      { title: 'Most called', rows: hotRow(internal.slice().sort((a, b) => b.fi - a.fi), (n) => n.fi + '×') },
+      { title: 'Most complex', rows: hotRow(internal.slice().sort((a, b) => b.cx - a.cx), (n) => 'cx ' + n.cx) },
+      { title: 'Largest', rows: hotRow(internal.slice().sort((a, b) => b.loc - a.loc), (n) => n.loc + ' loc') }
+    ];
+    v.guards = internal.filter((n) => n.guard).sort((a, b) => b.fi - a.fi).map((n) => ({ name: n.name, note: n.gnote, where: this.cite(n), used: n.fi + ' callers', click: () => this.openFlow(n.id) }));
+    const mx = d.libs[0][1];
+    v.libs = d.libs.map(([n, c], li) => ({ name: n, count: c, bar: 'display:block;height:8px;border-radius:3px;background:#7fb0b4;opacity:.85;transform-origin:left center;animation:rm-grow 1s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (900 + li * 70) + 'ms;width:' + (c / mx * 100) + '%' }));
+
+    /* ---------- architecture ---------- */
+    const A = this.archLayout(); const AM = {}; A.nodes.forEach((n) => { AM[n.id] = n; });
+    const hov = s.hover; const adjH = {}; if (hov) A.edges.forEach((e) => { if (e.a === hov) adjH[e.b] = 1; if (e.b === hov) adjH[e.a] = 1; });
+    v.crumbs = [{ label: 'All folders', style: s.archPath ? '' : 'color:#b9c79a;border-color:#b9c79a', click: set({ archPath: null, hover: null }) }].concat(s.archPath ? [{ label: s.archPath + '/', style: 'color:#b9c79a;border-color:#b9c79a', click: () => {} }] : []);
+    v.archHint = s.archPath ? 'Files in ' + s.archPath + '/. Size is lines of code, arrows are imports. Double-click a dashed folder to jump there.' : 'Size is lines of code, arrows are imports. Double-click a folder to drill into its files.';
+    v.archEdges = A.edges.map((e, ei) => {
+      const a = AM[e.a], b = AM[e.b]; if (!a || !b) return { d: '', head: '', pathStyle: '', headStyle: '', chip: '', chipStyle: '', packet: 'display:none' };
+      let dx = b.x - a.x, dy = b.y - a.y; const len = Math.sqrt(dx * dx + dy * dy) || 1; const ux = dx / len, uy = dy / len;
+      const x1 = a.x + ux * (a.r + 3), y1 = a.y + uy * (a.r + 3), x2 = b.x - ux * (b.r + 6), y2 = b.y - uy * (b.r + 6);
+      const off = Math.min(46, len * 0.14); const cx = (x1 + x2) / 2 - uy * off, cy = (y1 + y2) / 2 + ux * off;
+      const tx = x2 - cx, ty = y2 - cy, tl = Math.sqrt(tx * tx + ty * ty) || 1, tux = tx / tl, tuy = ty / tl;
+      const head = 'M' + x2 + ' ' + y2 + ' L' + (x2 - tux * 10 - tuy * 5) + ' ' + (y2 - tuy * 10 + tux * 5) + ' L' + (x2 - tux * 10 + tuy * 5) + ' ' + (y2 - tuy * 10 - tux * 5) + ' Z';
+      const hot = hov && (e.a === hov || e.b === hov); const dim = hov && !hot;
+      const col = hot ? '#7fb0b4' : '#566676';
+      const mid = [0.25 * x1 + 0.5 * cx + 0.25 * x2, 0.25 * y1 + 0.5 * cy + 0.25 * y2];
+      return { d: 'M' + x1 + ' ' + y1 + ' Q' + cx + ' ' + cy + ' ' + x2 + ' ' + y2, packet: this.packet('M' + x1 + ' ' + y1 + ' Q' + cx + ' ' + cy + ' ' + x2 + ' ' + y2, hot, dim, ei, false), head, baseStyle: 'stroke:#1a2128;stroke-width:' + (4 + Math.min(e.n, 6) * 0.45) + ';opacity:' + (dim ? 0.1 : 1) + ';transition:opacity .15s',
+        pathStyle: 'stroke:' + col + ';stroke-width:' + (1 + Math.min(e.n, 6) * 0.45) + ';stroke-dasharray:10 6;stroke-linecap:round;opacity:' + (dim ? 0.12 : 1) + ';transition:opacity .15s;animation:rm-dash ' + (hot ? 0.9 : 3.2) + 's linear infinite, rm-fadein .9s backwards;animation-delay:0s,' + (500 + ei * 40) + 'ms' + (hot ? ';filter:drop-shadow(0 0 5px #7fb0b4)' : ''),
+        headStyle: 'fill:' + col + ';opacity:' + (dim ? 0.12 : 1) + ';transition:opacity .15s',
+        chip: hot ? e.n + (e.n === 1 ? ' import' : ' imports') : '', chipStyle: 'position:absolute;left:' + (mid[0] - 40) + 'px;top:' + (mid[1] - 10) + 'px;width:80px;text-align:center;font-size:11px;padding:2px 0;background:#161b21;border:1px solid #3a4654;border-radius:5px;color:#dce3ea' };
+    });
+    v.archNodes = A.nodes.map((n, ni) => {
+      const col = n.g === 'py' ? ['#16292d', '#4f8388'] : ['#231f45', '#7f78a8'];
+      const sel = s.sel.k === n.kind && s.sel.id === (n.real || n.id); const dim = hov && hov !== n.id && !adjH[n.id]; const hot = hov === n.id;
+      return { wrapStyle: 'position:absolute;left:' + (n.x - 100) + 'px;top:' + (n.y - n.r) + 'px;width:200px;display:flex;flex-direction:column;align-items:center;pointer-events:none;opacity:' + (dim ? 0.25 : 1) + ';transform-origin:50% ' + n.r + 'px;transform:scale(' + (hot ? 1.07 : 1) + ');transition:opacity .12s,transform .25s cubic-bezier(.2,.8,.2,1);animation:rm-pop .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (ni * 60) + 'ms',
+        style: 'pointer-events:auto;width:' + n.r * 2 + 'px;height:' + n.r * 2 + 'px;background:' + (n.ghost ? 'transparent' : col[0]) + ';border:' + (sel ? '2.5px solid #b9c79a' : n.ghost ? '1.5px dashed #7d8a97' : '1.5px solid ' + col[1]) + ';box-shadow:' + (sel ? '0 0 26px rgba(185,199,154,.35)' : hot ? '0 0 28px rgba(127,176,180,.4)' : n.ghost ? 'none' : '0 0 18px ' + col[1] + '33') + ';transition:box-shadow .25s,filter .2s',
+        labelStyle: 'margin-top:7px;font-size:12px;font-weight:500;color:#dce3ea;text-align:center;word-break:break-all', subStyle: 'font-size:11.5px;color:#94a1ae;text-align:center', title: n.title, sub: n.sub, inner: n.inner, hot, selected: !!sel,
+        aria: n.title + ', ' + n.sub, enter: () => this.setState({ hover: n.id }), leave: () => this.setState({ hover: null }),
+        click: () => this.setState({ sel: { k: n.kind, id: n.real || n.id }, hlLine: null }),
+        dbl: () => { if (n.kind === 'folder') this.setState({ archPath: n.real || n.id, hover: null, sel: { k: 'folder', id: n.real || n.id } }); } };
+    });
+    v.goUp = set({ archPath: null });
+
+    /* ---------- call flow ---------- */
+    const FL = this.flowLayout(); const hv = s.hover; const nb = {};
+    if (hv) FL.edges.forEach((e) => { if (e[0] === hv) nb[e[1]] = 1; if (e[1] === hv) nb[e[0]] = 1; });
+    const base = ['login', 'refresh', 'get_invoice', 'stripe_webhook', 'get_current_user']; const rootsList = base.indexOf(s.flowRoot) >= 0 ? base : base.concat([s.flowRoot]);
+    v.flowRoots = rootsList.map((id) => ({ label: N[id].kind === 'ep' ? N[id].route : N[id].name + '()', cls: 'rm-chip' + (id === s.flowRoot ? ' on' : ''), click: () => this.setState({ flowRoot: id, sel: { k: 'fn', id }, hover: null, hlLine: null }) }));
+    v.modeBtns = [['calls', 'Calls'], ['callers', 'Callers'], ['both', 'Both']].map(([id, label]) => ({ label, cls: s.flowMode === id ? 'on' : '', on: s.flowMode === id, click: set({ flowMode: id }) }));
+    v.depthVal = s.depth; v.depthDec = () => this.setState({ depth: Math.max(1, s.depth - 1) }); v.depthInc = () => this.setState({ depth: Math.min(4, s.depth + 1) });
+    v.decDisabled = s.depth <= 1; v.incDisabled = s.depth >= 4;
+    v.outlineOn = s.outline; v.graphOn = !s.outline; v.outlineCls = 'rm-btn rm-btn-sm rm-btn-icon' + (s.outline ? ' rm-btn-primary' : ''); v.toggleOutline = set({ outline: !s.outline });
+    v.zoomVal = Math.round(s.zoom * 100) + '%'; v.zoomIn = () => this.setState({ zoom: Math.min(1.5, +(s.zoom + 0.1).toFixed(1)) }); v.zoomOut = () => this.setState({ zoom: Math.max(0.5, +(s.zoom - 0.1).toFixed(1)) });
+    const extCount = Array.from(FL.V).filter((id) => N[id].kind === 'ext').length;
+    v.flowInfo = FL.V.size + ' nodes · ' + FL.edges.length + ' calls · ' + extCount + ' external';
+    v.stageStyle = 'position:relative;margin:0 auto;width:' + FL.W * s.zoom + 'px;height:' + FL.Ht * s.zoom + 'px';
+    v.innerStyle = 'position:absolute;left:0;top:0;width:' + FL.W + 'px;height:' + FL.Ht + 'px;transform:scale(' + s.zoom + ');transform-origin:0 0';
+    v.flowEdges = FL.edges.map((e, ei) => {
+      const a = FL.place[e[0]], b = FL.place[e[1]]; const x1 = a.x + FL.NW, y1 = a.y + FL.H(e[0]) / 2, x2 = b.x, y2 = b.y + FL.H(e[1]) / 2; const dx = Math.max(40, (x2 - x1) * 0.5);
+      const hot = hv && (e[0] === hv || e[1] === hv); const dim = hv && !hot; const isExt = N[e[1]].kind === 'ext';
+      const selE = !hv && s.sel.k === 'fn' && (e[0] === s.sel.id || e[1] === s.sel.id);
+      const col = hot ? '#7fb0b4' : selE ? '#b9c79a' : '#4f5d6b';
+      return { svgStyle: 'position:absolute;left:0;top:0;width:' + FL.W + 'px;height:' + FL.Ht + 'px;overflow:visible', d: 'M' + x1 + ' ' + y1 + ' C' + (x1 + dx) + ' ' + y1 + ' ' + (x2 - dx) + ' ' + y2 + ' ' + x2 + ' ' + y2, packet: this.packet('M' + x1 + ' ' + y1 + ' C' + (x1 + dx) + ' ' + y1 + ' ' + (x2 - dx) + ' ' + y2 + ' ' + x2 + ' ' + y2, hot, dim, ei, isExt), head: 'M' + x2 + ' ' + y2 + ' L' + (x2 - 10) + ' ' + (y2 - 5) + ' L' + (x2 - 10) + ' ' + (y2 + 5) + ' Z',
+        baseStyle: 'stroke:#1a2128;stroke-width:5;opacity:' + (dim ? 0.1 : 1) + ';transition:opacity .15s',
+        pathStyle: 'stroke:' + col + ';stroke-width:' + (hot || selE ? 2.2 : 1.5) + ';stroke-linecap:round;' + (isExt ? 'stroke-dasharray:3 5;' : 'stroke-dasharray:10 6;') + 'opacity:' + (dim ? 0.12 : 1) + ';transition:opacity .15s;animation:rm-dash ' + (hot ? 0.9 : 3.4) + 's linear infinite, rm-fadein .9s backwards;animation-delay:0s,' + (300 + ei * 70) + 'ms' + (hot || selE ? ';filter:drop-shadow(0 0 5px ' + col + ')' : ''),
+        headStyle: 'fill:' + col + ';opacity:' + (dim ? 0.12 : 1) + ';transition:opacity .15s',
+        chip: hot ? 'L' + e[2] : '', chipStyle: 'position:absolute;left:' + ((x1 + x2) / 2 - 20) + 'px;top:' + ((y1 + y2) / 2 - 10) + 'px;width:40px;text-align:center;font-size:11px;padding:2px 0;background:#161b21;border:1px solid #7fb0b4;border-radius:5px;color:#7fb0b4' };
+    });
+    v.flowNodes = Array.from(FL.V).map((id, ni) => {
+      const n = N[id]; const p = FL.place[id]; const isExt = n.kind === 'ext'; const b = this.badgeFor(n);
+      const sel = s.sel.k === 'fn' && s.sel.id === id; const dim = hv && hv !== id && !nb[id];
+      const cxCol = n.cx >= 10 ? '#d98a62' : n.cx >= 6 ? '#cfae6a' : '#8fb996';
+      const hotN = hv === id; const lit = Math.max(1, Math.round(Math.min(n.cx, 20) / 2)); const pc = hotN ? '#7fb0b4' : sel ? '#b9c79a' : '#4f5d6b';
+      const port = (side) => 'position:absolute;' + side + ':-5px;top:calc(50% - 4px);width:8px;height:8px;border-radius:50%;background:#0b0e11;border:1.5px solid ' + pc + ';box-shadow:' + (hotN ? '0 0 10px #7fb0b4' : 'none') + ';transition:border-color .2s,box-shadow .2s';
+      return { style: 'position:absolute;left:' + p.x + 'px;top:' + p.y + 'px;width:' + FL.NW + 'px;height:' + FL.H(id) + 'px;background:' + (isExt ? '#0e1217' : '#12171c') + ';border:' + (sel ? '2px solid #b9c79a' : isExt ? '1.5px dashed #6b7885' : id === FL.root ? '1.5px solid #7d8c63' : '1px solid #2d3742') + ';opacity:' + (dim ? 0.3 : 1) + ';transform:translateY(' + (hotN ? -3 : 0) + 'px);box-shadow:' + (hotN ? '0 10px 30px rgba(127,176,180,.22)' : sel ? '0 0 22px rgba(185,199,154,.22)' : 'none') + ';animation:rm-pop .5s cubic-bezier(.2,.8,.2,1) backwards' + (id === FL.root ? ', rm-glow 2.8s ease-in-out infinite' : '') + ';animation-delay:' + (ni * 70) + 'ms' + (id === FL.root ? ', 0s' : ''),
+        badge: b.t, badgeStyle: 'flex:none;font-size:10px;font-weight:600;letter-spacing:.05em;padding:1px 6px;border-radius:4px;' + b.s,
+        name: n.kind === 'ep' ? n.route : n.name, isRoot: id === FL.root,
+        sig: isExt ? 'external · not indexed' : n.sig, sigStyle: 'font-size:11px;line-height:1.45;color:#a9b5c0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all',
+        hasDoc: !isExt, doc: n.doc || 'no docstring', docStyle: 'font-size:11.5px;line-height:1.4;color:' + (n.doc ? '#c6d0d9' : '#7d8a97') + ';' + (n.doc ? '' : 'font-style:italic;') + 'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden',
+        meta: isExt ? n.pkg + ' · ' + n.fi + ' callers in repo' : n.loc + ' loc · cx ' + n.cx + ' · in ' + (n.kind === 'ep' ? '—' : n.fi) + ' · out ' + n.fo,
+        hasBar: !isExt, portL: port('left'), portR: port('right'),
+        ticks: Array.from({ length: 10 }, (_, i) => ({ s: 'flex:1;height:' + (3 + i * 0.9).toFixed(1) + 'px;border-radius:1px;background:' + (i < lit ? cxCol : '#1e252d') + ';transform-origin:bottom;animation:rm-tick .45s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (ni * 70 + 350 + i * 28) + 'ms' })),
+        aria: (n.kind === 'ep' ? n.route : n.name) + (isExt ? ', external call' : ', complexity ' + n.cx),
+        enter: () => this.setState({ hover: id }), leave: () => this.setState({ hover: null }),
+        click: () => this.selectFn(id), dbl: () => this.setState({ flowRoot: id, sel: { k: 'fn', id }, hover: null }) };
+    });
+    // pan, fit, minimap
+    const scEl = () => document.getElementById('rm-flow-scroll');
+    v.panStart = (e) => {
+      if (e.button !== 0 || (e.target && e.target.closest && e.target.closest('button'))) return;
+      const el = e.currentTarget; const x0 = e.clientX, y0 = e.clientY, l0 = el.scrollLeft, t0 = el.scrollTop; el.style.cursor = 'grabbing';
+      const mv = (ev) => { el.scrollLeft = l0 - (ev.clientX - x0); el.scrollTop = t0 - (ev.clientY - y0); };
+      const up = () => { el.style.cursor = 'grab'; document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    };
+    v.zoomFit = () => {
+      const el = scEl(); if (!el) return;
+      const z = Math.min(1.5, Math.max(0.3, Math.min((el.clientWidth - 24) / FL.W, (el.clientHeight - 24) / FL.Ht)));
+      this.setState({ zoom: +z.toFixed(2) });
+      setTimeout(() => { const e2 = scEl(); if (e2) e2.scrollTo({ left: 0, top: 0, behavior: 'smooth' }); }, 40);
+    };
+    const ms = Math.min(150 / FL.W, 96 / FL.Ht); const mw = FL.W * ms, mh = FL.Ht * ms;
+    this._mm = { ms, mw, mh, zoom: s.zoom };
+    v.mmBox = 'position:relative;width:' + mw + 'px;height:' + mh + 'px';
+    v.mmNodes = Array.from(FL.V).map((id) => { const p = FL.place[id]; const nn = N[id]; const isSel = s.sel.k === 'fn' && s.sel.id === id;
+      return { style: 'position:absolute;left:' + p.x * ms + 'px;top:' + p.y * ms + 'px;width:' + FL.NW * ms + 'px;height:' + FL.H(id) * ms + 'px;border-radius:2px;background:' + (isSel || id === FL.root ? '#b9c79a' : nn.kind === 'ext' ? '#5b6773' : '#4f8388') + ';opacity:' + (hv === id ? 1 : 0.7) + ';transition:opacity .15s' }; });
+    v.mmVp = 'position:absolute;left:0;top:0;width:' + mw + 'px;height:' + mh + 'px;border:1.5px solid #b9c79a;background:rgba(185,199,154,.08);border-radius:3px;pointer-events:none';
+    v.onFlowScroll = (e) => this.updateVp(e.currentTarget);
+    v.mmClick = (e) => {
+      const el = scEl(); if (!el) return; const r = e.currentTarget.firstElementChild.getBoundingClientRect();
+      const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+      el.scrollTo({ left: Math.max(0, fx * FL.W * s.zoom - el.clientWidth / 2), top: Math.max(0, fy * FL.Ht * s.zoom - el.clientHeight / 2), behavior: 'smooth' });
+    };
+    // outline
+    const orows = []; const maxD = s.depth;
+    const walk = (id, adj, lvl, trail) => { (adj[id] || []).forEach((t) => { if (trail.indexOf(t.id) >= 0) return; const n = N[t.id]; orows.push({ isHead: false, isRow: true, text: n.name, where: n.kind === 'ext' ? n.pkg : this.cite(n), meta: n.kind === 'ext' ? 'external' : 'cx ' + n.cx + ' · ' + n.loc + ' loc', style: 'padding-left:' + (8 + lvl * 22) + 'px', nameStyle: 'font-size:13px;' + (n.kind === 'ext' ? 'color:#94a1ae;font-style:italic' : 'font-weight:500'), click: () => this.selectFn(t.id) }); if (lvl < maxD) walk(t.id, adj, lvl + 1, trail.concat([t.id])); }); };
+    const rn = N[s.flowRoot];
+    orows.push({ isHead: false, isRow: true, text: rn.kind === 'ep' ? rn.route : rn.name, where: this.cite(rn), meta: 'root · cx ' + rn.cx + ' · ' + rn.loc + ' loc', style: 'padding-left:8px', nameStyle: 'font-size:14px;font-weight:600;color:#b9c79a', click: () => this.selectFn(rn.id) });
+    if (s.flowMode !== 'callers') { orows.push({ isHead: true, isRow: false, text: 'Calls · depth ' + maxD }); walk(s.flowRoot, d.out, 1, [s.flowRoot]); }
+    if (s.flowMode !== 'calls') { orows.push({ isHead: true, isRow: false, text: 'Called by · depth ' + maxD }); const before = orows.length; walk(s.flowRoot, d.inn, 1, [s.flowRoot]); if (orows.length === before) orows.push({ isHead: false, isRow: true, text: 'Nothing in the index calls this directly.', where: '', meta: '', style: 'padding-left:30px;cursor:default', nameStyle: 'font-size:12.5px;color:#94a1ae', click: () => {} }); }
+    v.outlineRows = orows;
+
+    /* ---------- inspector ---------- */
+    const I = this.inspector();
+    v.inspStyle = 'flex:none;width:' + s.inspW + 'px;display:flex;flex-direction:column;min-height:0;background:#0e1217;border-left:1px solid #222a33';
+    v.inspBadges = I.badges; v.inspTitle = I.title; v.inspSub = I.sub;
+    v.inspTabs = [['summary', 'Summary'], ['source', 'Source'], ['evidence', 'Evidence'], ['explain', 'Explain']].map(([id, label]) => ({ label, on: s.tab === id, cls: 'rm-itab' + (s.tab === id ? ' rm-itab-on' : ''), click: set({ tab: id }) }));
+    v.tabSummary = s.tab === 'summary'; v.tabSource = s.tab === 'source'; v.tabEvidence = s.tab === 'evidence'; v.tabExplain = s.tab === 'explain';
+    v.sumDoc = I.doc; v.sumSig = I.sig; v.sumMetrics = I.metrics; v.sumLists = I.lists; v.sumActions = I.actions;
+    v.srcHead = I.srcHead; v.srcNote = I.srcNote; v.srcLines = I.src; v.hasSrcLines = I.src.length > 0;
+    v.evGroups = I.ev; v.evNote = I.evNote;
+    v.exBullets = I.ex.map((t) => ({ parts: this.rich(t) }));
+    v.aiCardTitle = s.ai ? 'AI summary · uses only indexed facts' : 'AI is off';
+    v.aiCardBody = s.ai ? I.aiBody.replace(/`/g, '') : 'Everything above comes from the static index and is complete without a model. Turn AI on for a prose summary of the same facts.';
+    v.aiCardAction = s.ai ? 'Turn AI off' : 'Turn AI on';
+    v.startResize = (e) => {
+      e.preventDefault(); const x0 = e.clientX, w0 = this.state.inspW;
+      const move = (ev) => this.setState({ inspW: Math.max(300, Math.min(680, w0 + (x0 - ev.clientX))) });
+      const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    };
+
+    /* ---------- palette ---------- */
+    const run = (fn) => () => { this.setState({ palOpen: false }); fn(); };
+    const cmds = [
+      { label: 'Go to Overview', hint: 'view', fn: () => this.setState({ view: 'overview' }) },
+      { label: 'Go to Architecture', hint: 'view', fn: () => this.setState({ view: 'arch', archPath: null }) },
+      { label: 'Go to Call flow', hint: 'view', fn: () => this.setState({ view: 'flow' }) },
+      { label: 'Open flow: POST /auth/login', hint: 'flow', fn: () => this.openFlow('login') },
+      { label: 'Open flow: POST /auth/refresh', hint: 'flow', fn: () => this.openFlow('refresh') },
+      { label: 'Open flow: GET /invoices/{invoice_id}', hint: 'flow', fn: () => this.openFlow('get_invoice') },
+      { label: 'Open flow: POST /payments/webhook', hint: 'flow', fn: () => this.openFlow('stripe_webhook') },
+      { label: 'Open flow: get_current_user', hint: 'flow', fn: () => this.openFlow('get_current_user') },
+      { label: 'Ask the codebase', hint: '/', fn: () => this.focusId('rm-ask') },
+      { label: 'Return to repo picker', hint: 'intro', fn: () => this.replayGate() },
+      { label: 'Index project', hint: 'action', fn: () => v.startIndex() },
+      { label: 'Export Markdown report', hint: 'action', fn: () => this.toastMsg('Saved ledgerline-report.md') },
+      { label: s.ai ? 'Turn AI off' : 'Turn AI on', hint: 'toggle', fn: () => v.toggleAI() }
+    ];
+    const pq = s.palQ.trim().toLowerCase();
+    const shown = cmds.filter((c) => !pq || c.label.toLowerCase().indexOf(pq) >= 0);
+    v.palOpen = s.palOpen; v.palQ = s.palQ; v.palEmpty = shown.length === 0;
+    v.palItems = shown.map((c, i) => ({ label: c.label, hint: c.hint, cls: 'rm-pal-item' + (i === 0 ? ' rm-pal-first' : ''), click: run(c.fn) }));
+    v.onPalQuery = (e) => this.setState({ palQ: e.target.value });
+    v.onPalKey = (e) => { if (e.key === 'Enter' && shown.length) { e.preventDefault(); this.setState({ palOpen: false }); shown[0].fn(); } };
+
+    v.toast = s.toast;
+    /* ---------- envelope intro ---------- */
+    v.gate = s.gate; v.gateVisible = s.gate !== 'done';
+    v.rootCls = 'rm rm-root' + (s.gate === 'pick' || s.gate === 'opening' ? ' rm-wait' : '');
+    v.gateTarget = s.gateHover || 'choose a repo';
+    v.skipGate = () => this.skipGate(); v.replayGate = () => this.replayGate();
+    v.tiltStyle = s.gate === 'pick' && s.gateHover ? 'transform:rotate(-2.5deg) translateY(-6px) scale(1.03)' : '';
+    v.gateRepos = [['ledgerline', 'indexed 2 min ago · py + ts'], ['notes-sync', 'indexed 3 days ago · py'], ['kiln-web', 'not indexed yet · ts']].map(([name, meta], i) => ({
+      name, meta, style: 'animation:rm-rise .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (500 + i * 130) + 'ms',
+      click: () => this.openRepo(name), enter: () => { if (this.state.gate === 'pick') this.setState({ gateHover: name }); }, leave: () => { if (this.state.gate === 'pick') this.setState({ gateHover: null }); }
+    }));
+    const gl = [['def login', 6, 14, 3], ['jwt.decode', 14, 70, 11], ['api/auth.py:42', 22, 32, 8], ['cx 6', 30, 82, 13], ['Depends(get_db)', 38, 20, 5], ['POST /auth/login', 46, 60, 15], ['record_event()', 54, 8, 9], ['fan-in 31', 62, 44, 12], ['class Invoice', 70, 76, 4], ['useAuth.ts', 78, 26, 14], ['is_token_revoked', 86, 56, 7], ['GET /invoices', 92, 12, 10], ['services/', 12, 90, 6], ['verify_password', 66, 94, 16], ['redis.exists', 34, 48, 2], ['import tokens', 82, 88, 1]];
+    v.glyphs = gl.map(([t, top, left, dly], i) => ({ t, style: 'top:' + top + '%;left:' + left + '%;animation-duration:' + (11 + (i % 5) * 2) + 's;animation-delay:-' + dly + 's' }));
+    /* ---------- motion + hero ---------- */
+    v.spotStyle = 'position:absolute;left:0;top:0;right:0;bottom:0;z-index:3;pointer-events:none;background:radial-gradient(480px circle at var(--mx,60%) var(--my,25%), rgba(185,199,154,.045), transparent 65%)';
+    v.onMove = (e) => {
+      if (this._raf) return; const x = e.clientX, y = e.clientY;
+      this._raf = requestAnimationFrame(() => { this._raf = 0; const r = document.getElementById('rm-root'); if (r) { const b = r.getBoundingClientRect(); r.style.setProperty('--mx', (x - b.left) + 'px'); r.style.setProperty('--my', (y - b.top) + 'px'); } });
+    };
+    v.gateMove = (e) => {
+      if (this.state.gate !== 'pick') return;
+      const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5;
+      const g = document.getElementById('rm-glyphs'), en = document.getElementById('rm-env');
+      if (g) g.style.transform = 'translate(' + (nx * -26).toFixed(1) + 'px,' + (ny * -18).toFixed(1) + 'px)';
+      if (en) en.style.transform = 'rotateX(' + (ny * -9).toFixed(2) + 'deg) rotateY(' + (nx * 12).toFixed(2) + 'deg)';
+    };
+    const vi = ['overview', 'arch', 'flow'].indexOf(s.view); const ti2 = ['summary', 'source', 'evidence', 'explain'].indexOf(s.tab);
+    v.tabInd = 'position:absolute;bottom:0;left:' + (12 + vi * 134) + 'px;width:132px;height:2px;background:#b9c79a;box-shadow:0 0 12px #b9c79a;transition:left .45s cubic-bezier(.6,0,.2,1)';
+    v.inspInd = 'position:absolute;bottom:0;left:' + ti2 * 25 + '%;width:25%;height:2px;background:#b9c79a;box-shadow:0 0 10px rgba(185,199,154,.6);transition:left .35s cubic-bezier(.6,0,.2,1)';
+    v.canBack = (s.hist || []).length > 0; v.goBack = () => this.goBack();
+    const HW = [['38', 0], ['endpoints,', 0], ['8', 1], ['wide', 1], ['open.', 1], ['One', 0], ['guard', 2], ['holds', 0], ['the', 0], ['rest.', 0]];
+    v.heroWords = HW.map(([t, k], i) => ({ t: i === 0 ? String(T.eps) : t, style: 'display:inline-block;margin-right:.26em;' + (k === 1 ? 'color:#d98a62;font-style:italic;' : k === 2 ? 'color:#b9c79a;font-style:italic;' : '') + 'animation:rm-wordrise .9s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:' + (350 + i * 85) + 'ms' }));
+    const topCx = Object.keys(N).map((k) => N[k]).filter((n) => n.kind !== 'ext').sort((a, b) => b.cx - a.cx)[0];
+    v.findings = [
+      { tag: 'PUBLIC', col: '#d98a62', text: 'stripe_webhook is open to the internet and trusts a signature, not a token.', go: () => this.openFlow('stripe_webhook') },
+      { tag: 'CHOKEPOINT', col: '#7fb0b4', text: 'get_current_user is called from ' + N.get_current_user.fi + ' places. Read it first.', go: () => this.openFlow('get_current_user') },
+      { tag: 'COMPLEX', col: '#d98a62', text: topCx.name + ' is the most complex function, at ' + topCx.cx + '.', go: () => this.openFlow(topCx.id) }
+    ].map((f) => ({ tag: f.tag, text: f.text, tagStyle: 'font-size:11px;letter-spacing:.14em;color:' + f.col, click: f.go }));
+    let lead = '';
+    if (s.sel.k === 'fn') { const n = N[s.sel.id];
+      lead = n.kind === 'ext' ? 'Outside the repo, so RepoMind can only see how it is called.' : n.kind === 'ep' ? (n.auth === 'public' ? 'Open to anyone: nothing checks a token on this route.' : n.auth === 'authentication' ? 'This route hands out credentials, so it stays open.' : 'A protected route: a token must pass first.') : n.guard ? 'A guard that ' + n.fi + ' callers rely on.' : n.fi > 4 ? 'A busy helper, called from ' + n.fi + ' places.' : 'Makes ' + n.fo + ' call' + (n.fo === 1 ? '' : 's') + (n.cx >= 6 ? ' and branches a lot.' : ' and stays simple.');
+    } else if (s.sel.k === 'file') { const f = d.FM[s.sel.id]; lead = f ? f.name + ' is ' + f.loc.toLocaleString('en-US') + ' lines in ' + f.folder + '/.' : ''; }
+    else { const fo = d.FO[s.sel.id]; lead = fo ? s.sel.id + '/ holds ' + fo.files + ' files and ' + fo.loc.toLocaleString('en-US') + ' lines.' : ''; }
+    v.sumLead = lead;
+    v.onKey = (e) => {
+      if (this.state.gate === 'pick' || this.state.gate === 'opening') return;
+      const tag = (e.target && e.target.tagName) || ''; const inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'k') { e.preventDefault(); v.openPalette(); return; }
+      if (e.key === 'Escape') { this.closeAll(); return; }
+      if (e.key === '/' && !inField && !this.state.palOpen) { e.preventDefault(); this.focusId('rm-ask'); }
+    };
+    return v;
+  }
+}
+</script>
+</body>
+</html>

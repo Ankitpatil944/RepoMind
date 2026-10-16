@@ -1,9 +1,10 @@
 import { Handle, Position, useStore, type Node, type NodeProps } from '@xyflow/react'
-import { ArrowDownLeft, ArrowUpRight, Box, ExternalLink, FunctionSquare, KeyRound, Route } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, KeyRound } from 'lucide-react'
 
 import type { FlowNode } from '../../api/types'
 import { MethodPill, RoleBadge, roleOf } from '../../design/primitives'
 import { cx } from '../../lib/cx'
+import { cxColor } from '../overview/colors'
 
 export type FlowNodeData = {
   node: FlowNode
@@ -14,7 +15,50 @@ export type FlowNodeData = {
 export type RFNode = Node<FlowNodeData, 'endpoint' | 'function' | 'external'>
 
 const SELECTED =
-  'border-accent-500 shadow-[0_0_0_1px_var(--accent-500),0_0_24px_color-mix(in_srgb,var(--accent-500)_28%,transparent)] node-selected-ping'
+  'border-sage shadow-[0_0_0_1px_var(--accent-400),0_0_24px_color-mix(in_srgb,var(--accent-400)_28%,transparent)] node-selected-ping'
+
+/** Kind badge: EP endpoint, FN function, CLS class, TSX component, EXT outside the repo. */
+function kindOf(n: FlowNode): { label: string; color: string } {
+  if (n.type === 'endpoint') return { label: 'EP', color: 'var(--accent-400)' }
+  if (n.type === 'external') return { label: 'EXT', color: 'var(--text-2)' }
+  if (n.type === 'class') return { label: 'CLS', color: 'var(--lavender)' }
+  if (n.file?.endsWith('.tsx') || n.file?.endsWith('.jsx')) return { label: n.file.endsWith('.tsx') ? 'TSX' : 'JSX', color: 'var(--lavender)' }
+  return { label: 'FN', color: 'var(--teal)' }
+}
+
+function KindBadge({ node }: { node: FlowNode }) {
+  const { label, color } = kindOf(node)
+  return (
+    <span
+      className="inline-flex h-[18px] shrink-0 items-center rounded-[4px] border px-1.5 font-mono text-[10px] font-semibold tracking-wide"
+      style={{ color, borderColor: `color-mix(in srgb, ${color} 45%, transparent)`, background: `color-mix(in srgb, ${color} 10%, transparent)` }}
+      aria-hidden
+    >
+      {label}
+    </span>
+  )
+}
+
+/** 10-tick complexity meter; ticks grow in. The numeric chip beside it carries the meaning. */
+function CxMeter({ value }: { value: number }) {
+  const on = Math.min(10, Math.max(1, Math.round(value)))
+  const color = cxColor(value)
+  return (
+    <div className="mt-1.5 flex h-2 items-end gap-[2px]" aria-hidden>
+      {Array.from({ length: 10 }, (_, i) => (
+        <span
+          key={i}
+          className="tick-grow block w-full rounded-[1px]"
+          style={{
+            height: `${40 + i * 6}%`,
+            background: i < on ? color : 'var(--border-subtle)',
+            animationDelay: `${i * 30}ms`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
 
 /** Per-column stagger so nodes cascade in from the root. */
 const enter = (data: FlowNodeData) => ({ animationDelay: `${Math.min(data.col ?? 0, 8) * 70}ms` })
@@ -39,7 +83,8 @@ function Metrics({ node }: { node: FlowNode }) {
       {!!node.loc && <span className="metric-chip" title="Lines of code">{node.loc} loc</span>}
       {cx_ > 0 && (
         <span
-          className={cx('metric-chip', cx_ > 10 && 'text-warn')}
+          className="metric-chip"
+          style={{ color: cxColor(cx_) }}
           title={`Cyclomatic-style complexity ${cx_} (${COMPLEXITY_WORD(cx_)})`}
         >
           cx {cx_} · {COMPLEXITY_WORD(cx_)}
@@ -68,7 +113,7 @@ export function EndpointNode({ data, selected }: NodeProps<RFNode>) {
     return (
       <div
         className={cx(
-          'node-card flex h-full w-full items-center gap-2 rounded-lg border bg-bg-2 px-3',
+          'node-card flex h-full w-full items-center gap-2 rounded-[9px] border bg-bg-2 px-3',
           selected ? SELECTED : 'border-border-control',
         )}
       >
@@ -81,7 +126,7 @@ export function EndpointNode({ data, selected }: NodeProps<RFNode>) {
   return (
     <div
       className={cx(
-        'node-card node-enter h-full w-full rounded-lg border bg-bg-2 px-3 py-2',
+        'node-card node-enter h-full w-full rounded-[9px] border bg-bg-2 px-3 py-2',
         'node-endpoint',
         selected ? SELECTED : 'border-border-control',
         data.isRoot && 'node-root',
@@ -90,7 +135,7 @@ export function EndpointNode({ data, selected }: NodeProps<RFNode>) {
     >
       {handles}
       <div className="flex items-center gap-2">
-        <Route size={14} className="shrink-0 text-text-2" aria-hidden />
+        <KindBadge node={n} />
         <MethodPill method={n.method ?? ''} />
         <RoleBadge role={roleOf(n)} compact />
         <span className="ml-auto text-[11px] font-medium uppercase tracking-wide text-text-2">
@@ -109,19 +154,18 @@ export function EndpointNode({ data, selected }: NodeProps<RFNode>) {
 
 export function FunctionNode({ data, selected }: NodeProps<RFNode>) {
   const n = data.node
-  const Icon = n.type === 'class' ? Box : FunctionSquare
   const compact = useCompact()
+  const hot = (n.complexity ?? 0) >= 10
   if (compact) {
     return (
       <div
         className={cx(
-          'node-card flex h-full w-full items-center gap-2 rounded-lg border bg-bg-2 px-3',
+          'node-card flex h-full w-full items-center gap-2 rounded-[9px] border bg-bg-2 px-3',
           selected ? SELECTED : 'border-border-control',
           n.auth_related && 'node-auth',
         )}
       >
         {handles}
-        <Icon size={24} className="shrink-0 text-text-2" aria-hidden />
         <span className="truncate font-mono text-[22px] font-medium">{n.label}</span>
       </div>
     )
@@ -129,18 +173,19 @@ export function FunctionNode({ data, selected }: NodeProps<RFNode>) {
   return (
     <div
       className={cx(
-        'node-card node-enter h-full w-full rounded-lg border bg-bg-2 px-3 py-2',
+        'node-card node-enter h-full w-full rounded-[9px] border bg-bg-2 px-3 py-2',
         selected ? SELECTED : 'border-border-control',
         data.isRoot && 'node-root',
-        data.isRoot && !selected && 'border-text-3',
+        data.isRoot && !selected && 'border-sage-border',
         n.auth_related && 'node-auth',
       )}
       style={enter(data)}
     >
       {handles}
+      {hot && <span className="ring-pulse rounded-[9px]" aria-hidden />}
       <div className="flex items-center gap-2">
-        <Icon size={14} className="shrink-0 text-text-2" aria-hidden />
-        <span className="truncate font-mono text-[13px] font-medium text-text-1" title={n.label}>
+        <KindBadge node={n} />
+        <span className="truncate font-mono text-[13px] font-medium text-cream" title={n.label}>
           {n.label}
         </span>
         {n.auth_related && (
@@ -161,6 +206,7 @@ export function FunctionNode({ data, selected }: NodeProps<RFNode>) {
         </p>
       )}
       <Metrics node={n} />
+      {!!n.complexity && <CxMeter value={n.complexity} />}
       <div className="mt-1.5 flex items-center gap-2 text-[11.5px] text-text-2">
         <span className="truncate font-mono">
           {n.file}:{n.start_line}
@@ -181,14 +227,17 @@ export function ExternalNode({ data, selected }: NodeProps<RFNode>) {
     <div
       title="Defined outside this repository, or resolved dynamically"
       className={cx(
-        'node-card node-enter flex h-full w-full items-center gap-2 rounded-lg border border-dashed bg-bg-1 px-3',
-        selected ? SELECTED : 'border-border-control',
+        'node-card node-enter flex h-full w-full items-center gap-2 rounded-[9px] border border-dashed bg-bg-1 px-3',
+        selected ? SELECTED : 'border-[#3a4654]',
       )}
       style={enter(data)}
     >
       {handles}
-      <ExternalLink size={13} className="shrink-0 text-text-2" aria-hidden />
-      <span className="truncate font-mono text-[12.5px] text-text-1">{n.label}</span>
+      <KindBadge node={n} />
+      <span className="min-w-0">
+        <span className="block truncate font-mono text-[12.5px] text-text-1">{n.label}</span>
+        <span className="block text-[10.5px] text-text-3">external · not indexed</span>
+      </span>
       {n.auth_related && <KeyRound size={12} className="ml-auto shrink-0 text-auth" aria-label="auth-related call" />}
     </div>
   )

@@ -10,6 +10,7 @@ interface Props {
   onAsk: (question: string) => void
 }
 
+/** The ask box lives in the header (DESIGN.md): `/` focuses it, Enter submits. */
 export const AskBar = forwardRef<HTMLInputElement, Props>(function AskBar({ disabled, pending, aiStatus, onAsk }, ref) {
   const [text, setText] = useState('')
   return (
@@ -21,9 +22,9 @@ export const AskBar = forwardRef<HTMLInputElement, Props>(function AskBar({ disa
         const q = text.trim()
         if (q && !disabled && !pending) onAsk(q)
       }}
-      className="flex items-center gap-3 border-t border-border-subtle bg-bg-1 px-4 py-2.5"
+      className="flex h-[34px] min-w-0 flex-1 items-center gap-2 rounded-[7px] border border-border-control bg-bg-0 pl-3 pr-1.5 text-text-2 transition-colors duration-150 focus-within:border-sage"
     >
-      <label htmlFor="ask-input" className="shrink-0 text-[13px] font-medium text-text-2">
+      <label htmlFor="ask-input" className="sr-only">
         Ask
       </label>
       <input
@@ -34,21 +35,22 @@ export const AskBar = forwardRef<HTMLInputElement, Props>(function AskBar({ disa
         disabled={disabled}
         placeholder={
           aiStatus && aiStatus !== 'ready'
-            ? 'Search the code (AI is off, so you get the matching code, not a written answer)'
-            : 'How do users log in? Which endpoints require authentication?'
+            ? 'Search the code (AI is off: you get matching code, not a written answer)'
+            : 'Ask: how do users log in? which endpoints need auth?'
         }
-        className="h-9 min-w-0 flex-1 rounded-md border border-border-control bg-bg-2 px-3 text-[14px] text-text-1 placeholder:text-text-3 disabled:opacity-60"
+        className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-text-1 outline-none placeholder:text-text-3 disabled:opacity-60"
       />
-      <span className="hidden items-center gap-1 text-[12px] text-text-3 md:inline-flex">
-        press <Kbd>/</Kbd> to focus
+      <span className="hidden md:inline-flex">
+        <Kbd>/</Kbd>
       </span>
       <button
         type="submit"
+        aria-label={pending ? 'Asking' : 'Submit question'}
         disabled={disabled || pending || !text.trim()}
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-accent-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-6 shrink-0 items-center gap-1 rounded-[5px] bg-raised px-2 text-[12px] font-medium text-text-1 transition-colors duration-150 hover:bg-bg-3 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending ? 'Asking…' : 'Ask'}
-        <CornerDownLeft size={14} aria-hidden />
+        <CornerDownLeft size={12} aria-hidden />
       </button>
     </form>
   )

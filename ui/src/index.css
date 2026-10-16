@@ -3,8 +3,9 @@
 @import '@xyflow/react/dist/style.css';
 
 @theme inline {
-  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Geist Sans', 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: 'Instrument Serif', 'Times New Roman', serif;
 
   --color-bg-0: var(--bg-0);
   --color-bg-1: var(--bg-1);
@@ -22,6 +23,17 @@
   --color-danger: var(--danger);
   --color-border-subtle: var(--border-subtle);
   --color-border-control: var(--border-control);
+  --color-raised: var(--raised);
+  --color-cream: var(--cream);
+  --color-on-accent: var(--on-accent);
+  --color-sage: var(--accent-400);
+  --color-sage-bg: var(--sage-bg);
+  --color-sage-border: var(--sage-border);
+  --color-teal: var(--teal);
+  --color-terracotta: var(--terracotta);
+  --color-brass: var(--brass);
+  --color-lavender: var(--lavender);
+  --color-moss: var(--moss);
 }
 
 html,
@@ -35,10 +47,46 @@ body {
   background: var(--bg-0);
   color: var(--text-1);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+}
+
+.font-serif,
+.serif {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+/* Dot-grid canvas with a soft sage spotlight that follows the pointer. */
+.dotgrid {
+  background-color: var(--bg-0);
+  background-image: radial-gradient(#1b222a 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.spotlight {
+  position: relative;
+}
+.spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    420px circle at var(--mx) var(--my),
+    color-mix(in srgb, var(--accent-400) 7%, transparent),
+    transparent 70%
+  );
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
 ::selection {
@@ -69,8 +117,8 @@ summary {
 /* ---- React Flow, themed with tokens ------------------------------------ */
 .react-flow {
   --xy-background-color: var(--bg-0);
-  --xy-edge-stroke: var(--border-control);
-  --xy-edge-stroke-selected: var(--accent-500);
+  --xy-edge-stroke: #3a4654;
+  --xy-edge-stroke-selected: var(--accent-400);
   --xy-attribution-background-color: transparent;
   --xy-minimap-background-color: var(--bg-1);
   --xy-minimap-mask-background-color: color-mix(in srgb, var(--bg-0) 70%, transparent);
@@ -92,7 +140,7 @@ summary {
 
 /* Only the edges on the selected path flow; everything else stays still. */
 .react-flow__edge.edge-active .react-flow__edge-path {
-  stroke: var(--accent-500);
+  stroke: var(--accent-400);
   stroke-width: 2;
   stroke-dasharray: 6 5;
   animation: edge-flow 900ms linear infinite;
@@ -172,14 +220,14 @@ summary {
   background: var(--border-control);
 }
 .node-endpoint::before {
-  background: linear-gradient(180deg, var(--accent-400), var(--accent-600));
+  background: var(--accent-400);
 }
 .node-auth::before {
   background: var(--auth);
 }
 .react-flow__node:hover .node-card {
   transform: translateY(-2px);
-  border-color: var(--accent-500);
+  border-color: var(--teal) !important;
 }
 .node-root {
   animation:
@@ -198,8 +246,8 @@ summary {
   inset: -20%;
   pointer-events: none;
   background:
-    radial-gradient(40% 35% at 25% 30%, color-mix(in srgb, var(--accent-600) 22%, transparent), transparent 70%),
-    radial-gradient(35% 30% at 78% 72%, color-mix(in srgb, var(--auth) 14%, transparent), transparent 70%);
+    radial-gradient(40% 35% at 25% 30%, color-mix(in srgb, var(--accent-400) 8%, transparent), transparent 70%),
+    radial-gradient(35% 30% at 78% 72%, color-mix(in srgb, var(--teal) 7%, transparent), transparent 70%);
   animation: aurora 22s ease-in-out infinite;
 }
 .graph-stage .react-flow {
@@ -208,12 +256,12 @@ summary {
 }
 
 .edge-packet {
-  fill: var(--accent-400);
-  opacity: 0.55;
-  filter: drop-shadow(0 0 4px var(--accent-500));
+  fill: var(--teal);
+  opacity: 0.8;
+  filter: drop-shadow(0 0 4px var(--teal));
 }
 .edge-packet-active {
-  fill: var(--text-1);
+  fill: var(--cream);
   opacity: 1;
   filter: drop-shadow(0 0 6px var(--accent-400));
 }
@@ -227,7 +275,7 @@ summary {
 }
 
 .wordmark {
-  background: linear-gradient(90deg, var(--text-1), var(--accent-400));
+  background: linear-gradient(90deg, var(--cream), var(--accent-400));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -311,11 +359,12 @@ summary {
 @keyframes view-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
+    filter: blur(5px);
   }
 }
 .view-enter {
-  animation: view-in 280ms var(--ease-out) both;
+  animation: view-in 600ms var(--ease-out) backwards;
 }
 
 @keyframes rise-in {
@@ -416,4 +465,543 @@ summary {
   pointer-events: none;
   z-index: 4;
   background: linear-gradient(to left, var(--bg-0), transparent);
+}
+
+/* ---- Design-system motion (DESIGN.md section 5) ---------------------------
+   Use `backwards` fill, not `both`, so hover/dim transforms still apply.
+   Covered by the prefers-reduced-motion rule above. */
+@keyframes rm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@keyframes rm-wordrise {
+  from {
+    opacity: 0;
+    transform: translateY(55%) rotate(2.5deg);
+    filter: blur(8px);
+  }
+}
+@keyframes rm-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+}
+@keyframes rm-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.5);
+  }
+}
+@keyframes rm-breathe {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes rm-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes rm-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+@keyframes rm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes rm-scan {
+  from {
+    top: -6%;
+  }
+  to {
+    top: 104%;
+  }
+}
+@keyframes rm-tick {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes rm-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@keyframes rm-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+}
+@keyframes rm-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-400) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 24px 2px color-mix(in srgb, var(--accent-400) 30%, transparent);
+  }
+}
+
+.rise {
+  animation: rm-rise 800ms var(--ease-out) backwards;
+}
+.pop {
+  animation: rm-pop 500ms var(--ease-out) backwards;
+}
+.wordrise {
+  display: inline-block;
+  animation: rm-wordrise 900ms var(--ease-out) backwards;
+}
+.live-dot {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--moss);
+  animation: rm-pulse 2s ease-in-out infinite;
+}
+.breathe {
+  animation: rm-breathe 3s ease-in-out infinite;
+}
+.nudge {
+  display: inline-block;
+  animation: rm-nudge 1.6s ease-in-out infinite;
+}
+.sweep {
+  position: relative;
+  overflow: hidden;
+}
+.sweep::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0, var(--accent-400) 35%, var(--teal) 65%, transparent 100%);
+  background-size: 200% 100%;
+  opacity: 0.75;
+  animation: rm-sweep 5s linear infinite;
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.18), transparent);
+  animation: rm-shimmer 3.4s ease-in-out infinite;
+}
+.scanbeam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 90px;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--accent-400) 14%, transparent), transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-400) 50%, transparent);
+  animation: rm-scan 1.6s linear infinite;
+}
+.tiltcard {
+  transition:
+    transform 300ms ease-out,
+    border-color 200ms ease,
+    background 200ms ease;
+  will-change: transform;
+}
+.tick-grow {
+  transform-origin: bottom;
+  animation: rm-tick 500ms var(--ease-out) backwards;
+}
+.ring-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--teal);
+  pointer-events: none;
+  animation: rm-ring 1.5s ease-out infinite;
+}
+.orbit {
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--accent-400);
+  pointer-events: none;
+  animation: rm-spin 9s linear infinite;
+}
+.prim-btn {
+  background: var(--accent-400);
+  border: 1px solid var(--accent-400);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+.prim-btn:hover {
+  background: #cdd8b3;
+  border-color: #cdd8b3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scanbeam,
+  .sweep::before,
+  .shimmer::after,
+  .ring-pulse,
+  .orbit {
+    display: none;
+  }
+}
+
+/* ---- Call flow: idle edges drift slowly, highlighted edges flow fast ------ */
+.react-flow__edge:not(.edge-dim) .react-flow__edge-path {
+  stroke-dasharray: 6 5;
+  animation: edge-flow 3.2s linear infinite;
+}
+.react-flow__edge.edge-active .react-flow__edge-path {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--teal) 70%, transparent));
+}
+.react-flow__handle {
+  width: 7px;
+  height: 7px;
+  background: var(--bg-0);
+  border: 1.5px solid #3a4654;
+}
+.react-flow__node:hover .react-flow__handle {
+  border-color: var(--teal);
+}
+.react-flow__minimap {
+  border: 1px solid var(--border-control);
+  border-radius: 9px;
+  overflow: hidden;
+  --xy-minimap-background-color: rgb(14 18 23 / 0.92);
+}
+.react-flow__minimap-mask {
+  fill-opacity: 0.55;
+  stroke: var(--accent-400);
+  stroke-width: 1.5;
+}
+.react-flow__controls {
+  border: 1px solid var(--border-control);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.treemap-cell:hover {
+  transform: none;
+  filter: brightness(1.3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-flow__edge:not(.edge-dim) .react-flow__edge-path {
+    stroke-dasharray: none;
+  }
+}
+
+/* Architecture: hover scales and glows teal; selected gets a dashed sage orbit. */
+.arch-card {
+  overflow: visible;
+}
+.react-flow__node:hover .arch-card {
+  transform: scale(1.07);
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--teal) 28%, transparent);
+}
+.arch-orbit {
+  position: absolute;
+  inset: -7px;
+  border-radius: 14px;
+  border: 1.5px dashed var(--accent-400);
+  pointer-events: none;
+  animation: rm-breathe 2.4s ease-in-out infinite;
+}
+
+/* ---- Intro envelope (ported from the design prototype) ------------------- */
+@keyframes rm-ascend {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 0.85;
+  }
+  to {
+    transform: translateY(-170px);
+    opacity: 0;
+  }
+}
+@keyframes rm-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -10px;
+  }
+}
+.intro-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #07090c;
+  transition: opacity 600ms ease;
+}
+.intro-gate[data-s='fading'] {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro-bg {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#1d262e 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.intro-glyphs {
+  position: absolute;
+  inset: -30px;
+  transform: translate(var(--px, 0), var(--py, 0));
+  transition: transform 350ms ease-out;
+}
+.intro-glyph {
+  position: absolute;
+  bottom: 0;
+  font: 12px var(--font-mono);
+  color: #66737f;
+  white-space: nowrap;
+  animation: rm-ascend linear infinite;
+}
+.intro-skip {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border-control);
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 500;
+}
+.intro-skip:hover {
+  background: var(--bg-3);
+}
+.intro-col {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  padding: 20px 16px;
+}
+.intro-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  transition:
+    opacity 400ms ease,
+    transform 500ms ease;
+}
+.intro-choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  transition:
+    opacity 400ms ease,
+    transform 500ms ease;
+}
+.intro-gate:not([data-s='idle']) .intro-title {
+  opacity: 0;
+  transform: translateY(-14px);
+}
+.intro-gate:not([data-s='idle']) .intro-choices {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro-choice {
+  display: flex;
+  min-width: 172px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--border-control);
+  border-radius: 10px;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    background 200ms ease;
+}
+.intro-choice:hover,
+.intro-choice:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--accent-400);
+  background: #171d23;
+}
+.intro-env-tilt {
+  width: min(440px, 84vw);
+  transform: translate(var(--px, 0), var(--py, 0)) rotateX(var(--tx, 0)) rotateY(var(--ty, 0));
+  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.intro-env {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  perspective: 1100px;
+  animation: rm-bob 5s ease-in-out infinite;
+}
+.intro-gate:not([data-s='idle']) .intro-env {
+  animation-play-state: paused;
+}
+.intro-env-shadow {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -28px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.65);
+  filter: blur(14px);
+}
+.intro-env-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #1f2831, #141a20);
+  border: 1px solid #33404c;
+}
+.intro-letter-rise {
+  position: absolute;
+  left: 5%;
+  bottom: 5%;
+  width: 90%;
+  height: 90%;
+  z-index: 2;
+  transition:
+    transform 900ms cubic-bezier(0.2, 0.9, 0.25, 1) 1.5s,
+    z-index 0s linear 2.4s;
+}
+.intro-letter {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-1);
+  border: 1px solid #46525f;
+  border-radius: 6px;
+  box-shadow: 0 -6px 24px rgb(0 0 0 / 0.4);
+  transition: transform 1s cubic-bezier(0.6, 0, 0.2, 1) 2.4s;
+}
+.intro-gate:not([data-s='idle']) .intro-letter-rise {
+  transform: translateY(-66%);
+  z-index: 30;
+}
+.intro-gate:not([data-s='idle']) .intro-letter {
+  transform: scale(6);
+}
+.intro-pk {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  z-index: 3;
+}
+.intro-pk-l {
+  background: linear-gradient(120deg, #26313b, #1b232b);
+  clip-path: polygon(0 0, 50% 56%, 0 100%);
+}
+.intro-pk-r {
+  background: linear-gradient(240deg, #26313b, #1b232b);
+  clip-path: polygon(100% 0, 50% 56%, 100% 100%);
+}
+.intro-pk-b {
+  background: linear-gradient(180deg, #2c3843, #1e2730);
+  clip-path: polygon(0 100%, 50% 56%, 100% 100%);
+}
+.intro-flap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 56%;
+  z-index: 5;
+  transform-origin: 50% 0;
+  background: linear-gradient(180deg, #34414d, #27323c);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transition:
+    transform 750ms cubic-bezier(0.5, 0, 0.2, 1) 0.8s,
+    z-index 0s linear 1.15s,
+    background 0.01s linear 1.15s;
+}
+.intro-gate:not([data-s='idle']) .intro-flap {
+  transform: rotateX(180deg);
+  z-index: 1;
+  background: linear-gradient(180deg, #161c22, #1d252d);
+}
+.intro-seal {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 15%;
+  aspect-ratio: 1;
+  margin: -7.5% 0 0 -7.5%;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #dfe7c8, #b9c79a 55%, #8a9c6c);
+  animation: rm-glow 2.8s ease-in-out infinite;
+  transition:
+    transform 350ms ease 0.55s,
+    opacity 350ms ease 0.55s;
+}
+.intro-gate:not([data-s='idle']) .intro-seal {
+  transform: scale(1.6);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-gate {
+    display: none;
+  }
 }

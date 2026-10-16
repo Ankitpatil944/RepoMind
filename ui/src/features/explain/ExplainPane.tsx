@@ -104,7 +104,7 @@ export function ExplainPane({ node, ask, explain, aiStatus, onExplain, onCite, o
               type="button"
               onClick={() => onExplain(chunkId)}
               disabled={explain?.pending && explain.chunkId === chunkId}
-              className="inline-flex h-9 items-center gap-2 rounded-md bg-accent-600 px-3.5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-accent-600 px-3.5 text-[13px] font-semibold text-on-accent transition-colors duration-150 hover:bg-[#cdd8b3] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Sparkles size={15} aria-hidden />
               {showExplain && explain.result ? 'Explain again' : 'Explain this'}
