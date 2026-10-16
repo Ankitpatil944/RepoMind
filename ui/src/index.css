@@ -1005,3 +1005,10 @@ summary {
     display: none;
   }
 }
+
+/* The dashboard holds still until the intro hands over (DESIGN.md section 5). */
+.rm-wait header *,
+.rm-wait main *,
+.rm-wait aside * {
+  animation-play-state: paused !important;
+}

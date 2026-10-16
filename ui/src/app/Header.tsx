@@ -37,10 +37,10 @@ const BTN =
 export function Header({ repos, repo, ai, ask, onRepo, onPalette, onIndex, onExport }: Props) {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border-subtle bg-bg-1 px-5">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border-subtle bg-bg-1 px-3 sm:gap-3 sm:px-5">
       <div className="flex items-center gap-2.5">
         <Mark />
-        <span className="wordmark serif text-[24px] leading-none">RepoMind</span>
+        <span className="wordmark serif hidden text-[24px] leading-none sm:inline">RepoMind</span>
       </div>
 
       {repos.length > 0 && (
@@ -60,13 +60,15 @@ export function Header({ repos, repo, ai, ask, onRepo, onPalette, onIndex, onExp
         </label>
       )}
 
-      <div className="mx-auto flex min-w-0 max-w-xl flex-1">{ask}</div>
+      <div className="mx-auto flex min-w-[9rem] max-w-xl flex-1">{ask}</div>
 
       <div className="flex items-center gap-2">
         <button type="button" onClick={onPalette} className={BTN} aria-label="Open command palette" title="Command palette">
           <Search size={14} aria-hidden />
           <span className="hidden xl:inline">Search</span>
-          <Kbd>{isMac ? '⌘' : 'Ctrl'} K</Kbd>
+          <span className="hidden lg:inline-flex">
+            <Kbd>{isMac ? '⌘' : 'Ctrl'} K</Kbd>
+          </span>
         </button>
         {ai !== null && (
           <span
@@ -90,15 +92,15 @@ export function Header({ repos, repo, ai, ask, onRepo, onPalette, onIndex, onExp
             type="button"
             onClick={onExport}
             title="Export a token-budgeted summary to use as LLM context"
-            className={`${BTN} hidden md:inline-flex`}
+            className={`${BTN} hidden lg:inline-flex`}
           >
             <Download size={14} aria-hidden />
             Export
           </button>
         )}
-        <button type="button" onClick={onIndex} className={`${BTN} prim-btn hidden md:inline-flex`}>
+        <button type="button" onClick={onIndex} className={`${BTN} prim-btn`} aria-label="Index project">
           <FolderPlus size={14} aria-hidden />
-          Index project
+          <span className="hidden lg:inline">Index project</span>
         </button>
       </div>
     </header>

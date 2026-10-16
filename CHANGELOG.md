@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- UI redesign to the DESIGN.md spec: sage/terracotta/teal palette, Instrument Serif + Geist type,
+  a briefing-style Overview (headline, findings, heat-coloured risk map), call-flow nodes with
+  complexity meters and line-number edge chips, an inspector header with Back history, an ask box
+  in the header, and a skippable envelope intro (reduced-motion aware).
+
 - More frameworks: Fastify (options, `route({...})`, hooks), Koa/Hono, Express route chains,
   Django `path()`/`re_path()` and Django REST framework (routers, `permission_classes`, mixins).
 - Two more benchmark apps (Django + DRF, Fastify + Express) in the eval gate.

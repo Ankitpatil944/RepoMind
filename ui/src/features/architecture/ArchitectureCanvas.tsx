@@ -291,6 +291,11 @@ export function ArchitectureCanvas({ repo, root, selected, onRoot, onSelect, onO
             <MiniMap pannable zoomable position="bottom-right" style={{ width: 150, height: 96, marginBottom: 28 }} nodeColor="var(--border-control)" nodeStrokeWidth={0} />
           </ReactFlow>
         )}
+        {data && !data.truncated && data.nodes.length > 200 && (
+          <div role="status" className="absolute left-3 top-3 max-w-sm rounded-md border border-border-control bg-bg-2 px-2.5 py-1.5 text-[12.5px]">
+            Large repository: {data.nodes.length} modules. Double-click a folder to read one area at a time.
+          </div>
+        )}
         {data?.truncated && (
           <div role="status" className="absolute left-3 top-3 rounded-md border border-border-control bg-bg-2 px-2.5 py-1.5 text-[12.5px]">
             Showing the most connected 60 modules. Open a folder to see the rest.

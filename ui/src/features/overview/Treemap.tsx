@@ -142,7 +142,7 @@ export function Treemap({ files, onOpen }: Props) {
                 </button>
               )
             })}
-            <span className="pointer-events-none absolute left-2 top-1.5 z-[1] rounded bg-bg-0/80 px-1 font-mono text-[10.5px] text-text-2">
+            <span className="pointer-events-none absolute bottom-1.5 right-2 z-[1] rounded bg-bg-0/80 px-1 font-mono text-[10.5px] text-text-2">
               {g.name}
             </span>
           </div>

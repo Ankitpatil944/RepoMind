@@ -287,7 +287,7 @@ function Hero({
         <p className="font-mono text-[11.5px] text-text-3">{repo.path}</p>
       </div>
       <p
-        className="serif max-w-[22ch] text-[clamp(40px,6vw,76px)] leading-[1.02] tracking-[-0.01em] text-cream sm:max-w-[26ch]"
+        className="serif max-w-[32ch] text-[clamp(38px,5.2vw,68px)] leading-[1.04] tracking-[-0.01em] text-cream"
         role="heading"
         aria-level={2}
         aria-label={words.map((w) => w.text).join(' ')}

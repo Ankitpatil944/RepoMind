@@ -1,6 +1,7 @@
 import * as Tabs from '@radix-ui/react-tabs'
 import {
   Boxes,
+  ChevronLeft,
   ExternalLink,
   Globe,
   KeyRound,
@@ -16,7 +17,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useAsk, useCapabilities, useEndpoints, useExplain, useFlow, useRepos } from '../api/hooks'
 import type { ChunkRef, Endpoint, FlowNode, HotFunction, ModuleNode, Source, SymbolHit } from '../api/types'
 import { Constellation } from '../design/Constellation'
-import { EmptyState, ErrorNote, IconButton, MethodPill, RoleBadge, roleOf, Segmented, Spinner } from '../design/primitives'
+import { EmptyState, ErrorNote, IconButton, MethodPill, RoleBadge, roleOf, Segmented, Spinner, type Role } from '../design/primitives'
 import { cx } from '../lib/cx'
 import { useAppState, type InspectorTab, type View } from '../lib/hash'
 import { AskBar } from '../features/explain/AskBar'
@@ -128,6 +129,33 @@ export default function App() {
     () => flow?.nodes.find((n) => n.id === s.sel) ?? null,
     [flow, s.sel],
   )
+
+  /* Selection history (last 20) powers the inspector's Back button. */
+  type Snap = Pick<typeof s, 'ep' | 'ch' | 'sel' | 'file' | 'start' | 'end'>
+  const history = useRef<Snap[]>([])
+  const skipPush = useRef(false)
+  const [histLen, setHistLen] = useState(0)
+  useEffect(() => {
+    if (skipPush.current) {
+      skipPush.current = false
+      return
+    }
+    const snap: Snap = { ep: s.ep, ch: s.ch, sel: s.sel, file: s.file, start: s.start, end: s.end }
+    if (Object.values(snap).every((v) => v === null)) return
+    const top = history.current[history.current.length - 1]
+    if (top && (Object.keys(snap) as Array<keyof Snap>).every((k) => top[k] === snap[k])) return
+    history.current = [...history.current, snap].slice(-20)
+    setHistLen(history.current.length)
+  }, [s.ep, s.ch, s.sel, s.file, s.start, s.end])
+  const goBack = useCallback(() => {
+    if (history.current.length < 2) return
+    history.current = history.current.slice(0, -1)
+    const prev = history.current[history.current.length - 1]
+    skipPush.current = true
+    setArchSel(null)
+    set(prev)
+    setHistLen(history.current.length)
+  }, [set])
 
   /* ---------------------------------------------------------- selection */
 
@@ -337,7 +365,10 @@ export default function App() {
         : null
 
   return (
-    <div ref={rootRef} className="spotlight flex h-full flex-col">
+    <div
+      ref={rootRef}
+      className={cx('spotlight flex h-full flex-col', !introDone && repoList.length > 0 && 'rm-wait')}
+    >
       <Header
         repos={repoList}
         repo={repo}
@@ -607,6 +638,18 @@ export default function App() {
                 !inspectorOpen && 'lg:!hidden',
               )}
             >
+              <InspectorHeader
+                title={selectedNode?.label ?? archSel?.label ?? (s.file ? s.file.split('/').pop() ?? null : null)}
+                sub={
+                  selectedNode?.file
+                    ? `${selectedNode.file}${selectedNode.start_line ? `:${selectedNode.start_line}` : ''}`
+                    : (archSel?.path ?? s.file)
+                }
+                kind={selectedNode ? selectedNode.type : archSel ? archSel.kind : s.file ? 'file' : null}
+                role={selectedNode?.type === 'endpoint' ? roleOf(selectedNode) : null}
+                canBack={histLen > 1}
+                onBack={goBack}
+              />
               <Tabs.Root
                 value={s.tab}
                 onValueChange={(v) => set({ tab: v as InspectorTab })}
@@ -707,6 +750,45 @@ export default function App() {
           set({ repo: id, ep: null, ch: null, sel: null, file: null, start: null, end: null, arch: '', view: 'overview' })
         }}
       />
+    </div>
+  )
+}
+
+function InspectorHeader({
+  title,
+  sub,
+  kind,
+  role,
+  canBack,
+  onBack,
+}: {
+  title: string | null
+  sub: string | null
+  kind: string | null
+  role: Role | null
+  canBack: boolean
+  onBack: () => void
+}) {
+  if (!title) return null
+  return (
+    <div className="flex shrink-0 items-start gap-2 border-b border-border-subtle px-3 py-2.5">
+      <IconButton label="Back to previous selection" onClick={onBack} className={cx(!canBack && 'pointer-events-none opacity-30')}>
+        <ChevronLeft size={16} aria-hidden />
+      </IconButton>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="metric-chip uppercase">{kind}</span>
+          {role && <RoleBadge role={role} />}
+        </div>
+        <p className="mt-1 truncate font-mono text-[14px] font-medium text-cream" title={title}>
+          {title}
+        </p>
+        {sub && (
+          <p className="truncate font-mono text-[11.5px] text-text-3" title={sub}>
+            {sub}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
