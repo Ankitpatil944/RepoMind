@@ -1,9 +1,9 @@
 # RepoMind
 
-**Ask questions about any codebase and get answers that point to the exact file and line.**
+**Ask questions about any codebase and get answers that point to the exact file and line..**
 
 RepoMind indexes a Python, JavaScript or TypeScript project, then lets you ask things like
-*"how do users log in?"* or *"which endpoints require authentication?"*. Answers cite
+*"how do users log in?"* or *"which endpoints require authentication?"*. Answers cite 
 real source locations, and the whole thing runs locally and free.
 
 [![CI](https://github.com/Ankitpatil944/RepoMind/actions/workflows/ci.yml/badge.svg)](https://github.com/Ankitpatil944/RepoMind/actions)
