@@ -1,4 +1,4 @@
-# RepoMind
+# RepoMind.
 
 **Ask questions about any codebase and get answers that point to the exact file and line..**
 
