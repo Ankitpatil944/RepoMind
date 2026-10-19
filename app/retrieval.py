@@ -1,6 +1,7 @@
 """Hybrid retrieval: pgvector cosine + Postgres full-text, fused with
 reciprocal rank fusion, then (optionally) cross-encoder reranked."""
 
+import math
 from dataclasses import dataclass, field
 
 import psycopg
@@ -28,12 +29,18 @@ class Hit:
     matched_by: list[str] = field(default_factory=list)
 
 
+# Keyword matching is the weaker signal for natural-language questions (the benchmark on a
+# real 4k-chunk repo: keyword alone hit@1 0.17 vs vector 0.60), so it gets half a vote.
+WEIGHTS = {"keyword": 0.5}
+
+
 def rrf(rankings: dict[str, list[int]], k: int = RRF_K) -> dict[int, float]:
-    """Reciprocal rank fusion over named ranked id lists."""
+    """Weighted reciprocal rank fusion over named ranked id lists."""
     scores: dict[int, float] = {}
-    for ids in rankings.values():
+    for name, ids in rankings.items():
+        weight = WEIGHTS.get(name, 1.0)
         for rank, chunk_id in enumerate(ids, start=1):
-            scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0 / (k + rank)
+            scores[chunk_id] = scores.get(chunk_id, 0.0) + weight / (k + rank)
     return scores
 
 
@@ -51,20 +58,36 @@ def _vector_ids(conn: psycopg.Connection, repo_id: int, query_vec: list[float], 
 
 
 def _keyword_ids(conn: psycopg.Connection, repo_id: int, terms: list[str], limit: int) -> list[int]:
+    """Full-text candidates, ranked by how *rare* the matched terms are.
+
+    Postgres ranks by term frequency only, so in a large repo a chunk that says "score"
+    ten times beats the one chunk that says "trust". We weight each query term by its
+    inverse document frequency (BM25's idf) and rank by the weight of the distinct terms
+    a chunk contains; `ts_rank_cd` only breaks ties. Terms match as a prefix of a crude
+    stem because the 'simple' text-search config does no stemming. OR-semantics: natural
+    language questions rarely have every word in one chunk. Terms are [a-z0-9]+ only
+    (see split_identifiers), so building the tsquery is safe."""
     if not terms:
         return []
-    # OR-semantics: natural-language questions rarely have every word in one chunk.
-    # Terms are [a-z0-9]+ only (see split_identifiers), so the tsquery is safe.
-    # Prefix match on a crude stem, since the 'simple' config does no stemming.
-    tsquery = " | ".join(f"{stem(t)}:*" for t in terms)
+    patterns = [f"{stem(t)}:*" for t in terms]
+    counts = conn.execute(
+        "SELECT count(*), "
+        + ", ".join("count(*) FILTER (WHERE search_tsv @@ to_tsquery('simple', %s))" for _ in patterns)
+        + " FROM chunks WHERE repo_id = %s",
+        [*patterns, repo_id],
+    ).fetchone()
+    total, dfs = counts[0], counts[1:]
+    weights = [math.log(1 + (total - df + 0.5) / (df + 0.5)) if df else 0.0 for df in dfs]
+    any_term = " | ".join(patterns)
+    score = " + ".join("(CASE WHEN search_tsv @@ to_tsquery('simple', %s) THEN %s ELSE 0 END)" for _ in patterns)
     rows = conn.execute(
-        """
+        f"""
         SELECT id FROM chunks
         WHERE repo_id = %s AND search_tsv @@ to_tsquery('simple', %s)
-        ORDER BY ts_rank_cd(search_tsv, to_tsquery('simple', %s)) DESC
+        ORDER BY ({score}) DESC, ts_rank_cd(search_tsv, to_tsquery('simple', %s)) DESC
         LIMIT %s
-        """,
-        (repo_id, tsquery, tsquery, limit),
+        """,  # noqa: S608 - only the count of placeholders is interpolated
+        [repo_id, any_term, *[x for p, w in zip(patterns, weights) for x in (p, w)], any_term, limit],
     ).fetchall()
     return [r[0] for r in rows]
 

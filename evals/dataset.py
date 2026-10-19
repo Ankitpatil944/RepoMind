@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -21,7 +22,7 @@ class Dataset:
 
 def load_dataset(path: Path) -> Dataset:
     raw = json.loads(path.read_text(encoding="utf-8"))
-    repo_path = (path.parent / raw["repo"]).resolve()
+    repo_path = (path.parent / os.path.expandvars(raw["repo"])).resolve()
     if not repo_path.is_dir():
         raise FileNotFoundError(f"dataset repo not found: {repo_path}")
     questions = [

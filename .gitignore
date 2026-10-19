@@ -16,5 +16,8 @@ build/
 # evals/repos/ holds the committed benchmark app and must stay tracked)
 /repos/
 
+# private benchmarks built from real projects (names files from a private repo)
+/evals/local/
+
 # eval output
 eval-report.json
