@@ -3,7 +3,7 @@
 Thanks for helping out. Issues and pull requests are welcome, from typo fixes to new
 framework support.
 
-## Ground rules
+## Ground rules.
 
 - **Keep changes focused.** One PR, one idea. Unrelated refactors belong in their own PR.
 - **Add tests.** Bug fixes need a test that fails without the fix; features need tests for the new behaviour.
