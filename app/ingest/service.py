@@ -140,9 +140,22 @@ def _store_analysis(
     conn.execute("UPDATE files SET analyzed = TRUE WHERE id = %s", (file_id,))
 
 
+# How many leading path segments two files share ('a/b/x.py' vs 'a/b/c/y.py' -> 2). Used to
+# break ties between same-named definitions: in a monorepo every service has its own
+# `get_db`, and a call should resolve to the one in the caller's own service/package.
+_SHARED_PREFIX_SQL = """
+    COALESCE((SELECT max(i) FROM generate_series(1, least(
+                  array_length(string_to_array({a}, '/'), 1),
+                  array_length(string_to_array({b}, '/'), 1)) - 1) AS i
+              WHERE (string_to_array({a}, '/'))[1:i] = (string_to_array({b}, '/'))[1:i]), 0)
+"""
+
+
 def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
-    """Link call edges / endpoint handlers to chunk ids by name, preferring the
-    same file. Re-run on every ingest since another file may now define a name."""
+    """Link call edges / endpoint handlers to chunk ids by name, preferring the same
+    file, then the definition nearest the caller in the folder tree (so each service in
+    a monorepo resolves to its own helpers). Re-run on every ingest since another file
+    may now define a name."""
     # Name matching is a guess, so it is deliberately conservative:
     #   foo()        -> a plain function (a bare call can never be a method)
     #   self.foo()   -> a method in the same file
@@ -151,7 +164,7 @@ def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
     conn.execute(
         """
         UPDATE call_edges e SET callee_chunk_id = (
-            SELECT c.id FROM chunks c
+            SELECT c.id FROM chunks c JOIN files cf ON cf.id = c.file_id
             WHERE c.repo_id = e.repo_id AND c.name = e.callee_name
               AND CASE
                     WHEN position('.' in e.callee_full) = 0 THEN c.kind = 'function'
@@ -164,26 +177,28 @@ def _resolve_graph(conn: psycopg.Connection, repo_id: int) -> None:
                     ELSE c.kind IN ('function', 'method')
                          AND e.callee_name <> ALL(%s)
                   END
-            ORDER BY (c.file_id = e.file_id) DESC, c.id
+            ORDER BY (c.file_id = e.file_id) DESC, {shared} DESC, c.id
             LIMIT 1)
         WHERE e.repo_id = %s
-        """,
+        """.replace("{shared}", _SHARED_PREFIX_SQL.format(
+            a="cf.path", b="(SELECT path FROM files WHERE id = e.file_id)")),
         (list(COMMON_METHOD_NAMES), repo_id),
     )
     conn.execute(
         """
         UPDATE endpoints e SET handler_chunk_id = (
-            SELECT c.id FROM chunks c
+            SELECT c.id FROM chunks c JOIN files cf ON cf.id = c.file_id
             WHERE c.repo_id = e.repo_id
               AND (c.kind IN ('function', 'method')
                    OR (e.framework = 'django' AND c.kind = 'class'))  -- class-based views
               AND ((e.handler_line IS NOT NULL AND c.file_id = e.file_id
                     AND c.start_line = e.handler_line)
                 OR (e.handler_line IS NULL AND c.name = e.handler_name))
-            ORDER BY (c.file_id = e.file_id) DESC, c.id
+            ORDER BY (c.file_id = e.file_id) DESC, {shared} DESC, c.id
             LIMIT 1)
         WHERE e.repo_id = %s
-        """,
+        """.replace("{shared}", _SHARED_PREFIX_SQL.format(
+            a="cf.path", b="(SELECT path FROM files WHERE id = e.file_id)")),
         (repo_id,),
     )
 

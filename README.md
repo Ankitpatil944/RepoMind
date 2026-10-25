@@ -1,10 +1,27 @@
-# RepoMind.
+# RepoMind
 
-**Ask questions about any codebase and get answers that point to the exact file and line..**
+**Understand any codebase in minutes, and give your AI assistant a 1,000-token map of it instead of 1,000,000 tokens of source.**
 
-RepoMind indexes a Python, JavaScript or TypeScript project, then lets you ask things like
-*"how do users log in?"* or *"which endpoints require authentication?"*. Answers cite 
-real source locations, and the whole thing runs locally and free.
+RepoMind indexes a Python, JavaScript or TypeScript project and shows you its architecture,
+HTTP endpoints, auth surface and call graph, with every answer pointing at the exact file and
+line. It runs locally, needs no API key, and is free.
+
+**Use it to:**
+
+- 🧠 **Give Claude, ChatGPT or Cursor project memory.** Export a token-budgeted, secret-redacted
+  summary and save it as `CLAUDE.md`, or paste it into any chat. [Jump to how](#use-it-as-context-for-your-own-llm-and-keep-the-bill-small)
+- 🗺️ **Onboard onto an unfamiliar repo.** Treemap, architecture map, "start here" flows.
+- 🔐 **Audit the auth surface.** Which routes require authentication, and what is the evidence?
+- 🔎 **Search by meaning.** *"where are passwords hashed"* finds `hash_password`, not a grep pile.
+
+```bash
+git clone https://github.com/Ankitpatil944/RepoMind.git && cd RepoMind
+docker compose up -d --build
+docker compose exec api python -m app.cli ingest /samples/shop_api
+# then open http://localhost:8000
+```
+
+> If RepoMind saves you time, a ⭐ helps other developers find it.
 
 [![CI](https://github.com/Ankitpatil944/RepoMind/actions/workflows/ci.yml/badge.svg)](https://github.com/Ankitpatil944/RepoMind/actions)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
@@ -155,6 +172,17 @@ The same features are available over HTTP (`/ingest`, `/search`, `/ask`,
 <http://localhost:8000/docs>.
 
 ## Use it as context for your own LLM (and keep the bill small)
+
+**Quick recipe for Claude Code / Cursor:** generate a map once, commit it as the memory file your
+tool already reads.
+
+```bash
+docker compose exec api python -m app.cli export my-project --detail map --max-tokens 8000 -o CLAUDE.md
+```
+
+Copy `CLAUDE.md` into your project root (Cursor: `.cursorrules`, others: paste into the chat) and
+the assistant starts every session knowing the structure, routes and auth rules. Re-run after big
+changes.
 
 The embeddings in the database are a **search index**, not something a model can read: an LLM
 consumes text tokens, so you cannot hand it vectors. Most of what RepoMind stores is not vectors

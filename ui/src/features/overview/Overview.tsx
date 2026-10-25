@@ -67,7 +67,7 @@ export function Overview({
 
         <Section n="02" title="The shape of it">
           <StatRow o={o} />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <Card title="Languages" delay={0}>
               <LanguageBar o={o} />
             </Card>
@@ -99,7 +99,7 @@ export function Overview({
             <Treemap files={files.data ?? []} onOpen={onOpenFile} />
           </Card>
 
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <Card title="Most called" delay={140} hint="Functions many others depend on: change with care.">
               <HotList
                 items={o.hotspots.most_called}
@@ -127,7 +127,7 @@ export function Overview({
         </Section>
 
         <Section n="04" title="Guards and dependencies">
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <Card
               title="Auth guards"
               delay={260}
@@ -209,6 +209,18 @@ const FRAMEWORK: Record<string, string> = {
 }
 
 /** The one-sentence briefing: how exposed is this API, and what guards it? */
+const HOUSEKEEPING_PATH =
+  /^\/?$|(^|\/)(healthz?|ready|readiness|live|liveness|ping|metrics|docs|redoc|openapi(\.json)?|swagger|version|favicon\.ico|robots\.txt)(\/|$)/i
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+/** The unguarded endpoint most worth a second look: a write before a read, and never a
+ *  health check or docs route (those are meant to be open). */
+export function mostTellingOpenEndpoint(endpoints: Endpoint[]): Endpoint | undefined {
+  const open = endpoints.filter((e) => !e.requires_auth && !e.handles_authentication)
+  const real = open.filter((e) => !HOUSEKEEPING_PATH.test(e.path))
+  return real.find((e) => WRITE_METHODS.has(e.method.toUpperCase())) ?? real[0] ?? open[0]
+}
+
 function headline(o: OverviewData): ReactNode[] {
   const eps = o.totals.endpoints
   const pub = o.auth.public
@@ -250,7 +262,7 @@ function Hero({
     }
   }
 
-  const open = endpoints.find((e) => !e.requires_auth && !e.handles_authentication)
+  const open = mostTellingOpenEndpoint(endpoints)
   const hub = o.hotspots.most_called[0]
   const hard = o.hotspots.most_complex[0]
   const findings: Array<{ tag: string; tone: string; text: string; run: () => void }> = []
@@ -316,7 +328,7 @@ function Hero({
         </ul>
       )}
       {findings.length > 0 && (
-        <ul aria-label="Findings" className="grid gap-3 md:grid-cols-3">
+        <ul aria-label="Findings" className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {findings.map((f, i) => (
             <li key={f.tag} className="rise" style={{ animationDelay: `${400 + i * 90}ms` }}>
               <button
@@ -433,7 +445,7 @@ function StartHere({
   return (
     <section aria-label="Start here" className="rise" style={{ animationDelay: '700ms' }}>
       <h3 className="label mb-2">Start here</h3>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {steps
           .filter((s) => s.show)
           .map((s, i) => (
@@ -690,7 +702,7 @@ function OverviewSkeleton() {
         ))}
       </div>
       <div className="skeleton h-72" />
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {Array.from({ length: 3 }, (_, i) => (
           <div key={i} className="skeleton h-56" />
         ))}

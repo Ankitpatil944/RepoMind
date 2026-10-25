@@ -2,13 +2,28 @@
 
 ## Unreleased
 
+- Call graph: when several files define the same name (every service in a monorepo has its own
+  `get_db`), a call now resolves to the definition nearest the caller in the folder tree instead of
+  whichever was indexed first. On a 9-service repo this moved 227 cross-service links back to the
+  right service. Re-run ingest to relink an existing index.
+- Function summaries report the true number of callers ("called from 193 places") instead of the
+  first 24 shown in the list.
+- Overview on large repos: the risk map groups by the folder level that actually splits the code
+  (each service in a monorepo instead of one `services/` tile), the exposure finding skips health and
+  docs routes and prefers an unguarded write, and the page no longer overflows on phones.
+
 - Retrieval: keyword search now prefix-matches stemmed terms ("created" finds `issueToken`). With
   `bge-small` and no reranker this lifts MRR from 0.81 to 0.83; with the default reranker the
   benchmarks are unchanged. The hashing smoke floor for blog_django was lowered (hit@1 0.57 to
   0.45) because broader matching hurts the word-hash embedder. Tried and dropped: a function-name
   matcher (hurt real embeddings, MRR 0.83 to 0.77) and indexing endpoint auth facts (no effect).
-- `RERANK_MODEL=BAAI/bge-reranker-base` is about 4 points better hit@1 than the default MiniLM
-  reranker but ~5x slower per query (1.6 s vs 0.3 s).
+- Retrieval: keyword matches are ranked by term rarity (BM25-style IDF), and the keyword list gets
+  half weight in rank fusion. On a real 4,110-chunk repo the old Postgres ranking made hybrid search
+  worse than vector alone (hit@1 0.40 vs 0.61); with IDF hybrid reaches 0.59 hit@1 and 0.93 hit@10.
+  The hashing smoke floor for orders_fastify was lowered (hit@3 0.62 to 0.45).
+- Rerankers re-measured on that repo: none beat plain hybrid search at hit@1; MiniLM lifts hit@10
+  from 0.93 to 0.97. `bge-reranker-base` scored worse (hit@1 0.53) at ~4 s per query, so it is not
+  recommended.
 
 - UI redesign to the DESIGN.md spec: sage/terracotta/teal palette, Instrument Serif + Geist type,
   a briefing-style Overview (headline, findings, heat-coloured risk map), call-flow nodes with

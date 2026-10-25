@@ -118,6 +118,7 @@ function ChunkSummary({
       </div>
     )
   }
+  const callerCount = f.caller_count ?? f.callers.length
   return (
     <div className="h-full overflow-auto p-4">
       <div className="rise-in">
@@ -152,7 +153,7 @@ function ChunkSummary({
           }
           hint="1 + number of branch points (if/for/while/except/and/or)"
         />
-        <Metric label="Callers" value={f.callers.length} />
+        <Metric label="Callers" value={callerCount} />
         <Metric label="Calls" value={f.callees_internal.length + f.callees_external.length} />
       </div>
 
@@ -182,8 +183,13 @@ function ChunkSummary({
       )}
 
       {f.callers.length > 0 && (
-        <Section title="Called by" count={f.callers.length}>
+        <Section title="Called by" count={callerCount}>
           <RefList items={f.callers} onOpen={onOpenChunk} />
+          {callerCount > f.callers.length && (
+            <p className="mt-1.5 text-[12px] text-text-2">
+              Showing {f.callers.length} of {callerCount}. Open the call flow in Callers mode to see them all.
+            </p>
+          )}
         </Section>
       )}
       {f.callees_internal.length > 0 && (

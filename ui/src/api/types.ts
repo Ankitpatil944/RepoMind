@@ -220,7 +220,9 @@ export interface ChunkFacts {
   loc: number
   callees_internal: ChunkRef[]
   callees_external: string[]
+  /** A capped sample (first 24); `caller_count` is the real total. */
   callers: ChunkRef[]
+  caller_count?: number
   endpoints: Array<{
     id: number
     method: string

@@ -182,9 +182,10 @@ def describe_chunk(f: dict) -> list[str]:
 
     callers = f.get("callers", [])
     if callers:
+        total = f.get("caller_count", len(callers))  # `callers` is a capped sample
         names = ", ".join(f"`{c['name']}`" for c in callers[:5])
-        more = f" and {len(callers) - 5} more" if len(callers) > 5 else ""
-        out.append(f"It is called from {len(callers)} place{'s' if len(callers) != 1 else ''}: {names}{more}.")
+        more = f" and {total - 5} more" if total > 5 else ""
+        out.append(f"It is called from {total} place{'s' if total != 1 else ''}: {names}{more}.")
     elif not f.get("endpoints"):
         out.append("Nothing else in the index calls it, so it is an entry point, a callback, or unused.")
 
@@ -505,6 +506,10 @@ def chunk_facts(conn: psycopg.Connection, repo_id: int, chunk_id: int) -> dict |
         """,
         (cid, cid),
     ).fetchall()
+    caller_count = conn.execute(
+        "SELECT count(DISTINCT caller_chunk_id) FROM call_edges WHERE callee_chunk_id = %s AND caller_chunk_id <> %s",
+        (cid, cid),
+    ).fetchone()[0]
     endpoints = [e for e in list_endpoints(conn, repo_id) if e["handler_chunk_id"] == cid]
 
     facts = {
@@ -526,6 +531,7 @@ def chunk_facts(conn: psycopg.Connection, repo_id: int, chunk_id: int) -> dict |
         ],
         "callees_external": externals,
         "callers": [{"chunk_id": i, "name": n, "file": p, "line": ln} for i, n, p, ln in callers],
+        "caller_count": caller_count,
         "endpoints": [
             {k: e[k] for k in ("id", "method", "path", "handles_authentication", "requires_auth", "evidence")}
             for e in endpoints

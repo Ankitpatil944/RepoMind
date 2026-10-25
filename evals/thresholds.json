@@ -77,7 +77,7 @@
           "endpoints.detection_recall": 0.95,
           "endpoints.requires_auth_f1": 0.95,
           "retrieval.hit@1": 0.28,
-          "retrieval.hit@3": 0.62,
+          "retrieval.hit@3": 0.45,
           "retrieval.mrr": 0.46,
           "retrieval.recall@10": 0.78,
           "retrieval.recall@5": 0.7

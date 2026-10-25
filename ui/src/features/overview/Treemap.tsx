@@ -29,6 +29,33 @@ interface Group {
   cells: Cell[]
 }
 
+const MAX_DEPTH = 4
+
+/** Group files by folder at the shallowest depth that actually splits the repo. A monorepo
+ *  with everything under `services/` would otherwise be one giant tile, so we go deeper
+ *  while a single folder holds most of the code (and the depth still adds groups). */
+export function groupByFolder(files: FileEntry[]): Map<string, FileEntry[]> {
+  const at = (depth: number) => {
+    const byDir = new Map<string, FileEntry[]>()
+    for (const f of files) {
+      const parts = f.path.split('/')
+      const key = parts.length > 1 ? parts.slice(0, Math.min(depth, parts.length - 1)).join('/') : '(root)'
+      byDir.set(key, [...(byDir.get(key) ?? []), f])
+    }
+    return byDir
+  }
+  const total = files.reduce((a, f) => a + f.loc, 0) || 1
+  let best = at(1)
+  for (let depth = 2; depth <= MAX_DEPTH; depth++) {
+    const largest = Math.max(...[...best.values()].map((fs) => fs.reduce((a, f) => a + f.loc, 0)))
+    if (largest / total < 0.6) break
+    const next = at(depth)
+    if (next.size <= best.size) break
+    best = next
+  }
+  return best
+}
+
 /** Risk map: a two-level treemap. Size = lines of code, heat = complexity of the file
  *  relative to the most complex one. Hovering a tile dims the rest and fills the
  *  readout line; hot tiles pulse. Every cell is a real button. */
@@ -37,12 +64,7 @@ export function Treemap({ files, onOpen }: Props) {
   const maxCx = useMemo(() => Math.max(1, ...files.map((f) => f.complexity)), [files])
 
   const groups = useMemo<Group[]>(() => {
-    const byDir = new Map<string, FileEntry[]>()
-    for (const f of files) {
-      if (f.loc <= 0) continue
-      const top = f.path.includes('/') ? f.path.split('/')[0] : '(root)'
-      byDir.set(top, [...(byDir.get(top) ?? []), f])
-    }
+    const byDir = groupByFolder(files.filter((f) => f.loc > 0))
     const dirRects = layoutTreemap(
       [...byDir.entries()].map(([id, fs]) => ({ id, value: fs.reduce((a, f) => a + f.loc, 0) })),
       W,
@@ -81,7 +103,7 @@ export function Treemap({ files, onOpen }: Props) {
         {groups.map((g) => (
           <div
             key={g.name}
-            className="absolute"
+            className="absolute rounded-[6px] shadow-[inset_0_0_0_1px_var(--border-control)]"
             style={{
               left: `${g.x}%`,
               top: `${(g.y / H) * 100}%`,
@@ -142,9 +164,14 @@ export function Treemap({ files, onOpen }: Props) {
                 </button>
               )
             })}
-            <span className="pointer-events-none absolute bottom-1.5 right-2 z-[1] rounded bg-bg-0/80 px-1 font-mono text-[10.5px] text-text-2">
-              {g.name}
-            </span>
+            {g.w > 9 && (g.h / H) * 100 > 12 && (
+              <span
+                className="pointer-events-none absolute bottom-1.5 right-2 z-[1] max-w-[calc(100%-1rem)] truncate rounded bg-bg-0/80 px-1 font-mono text-[10.5px] text-text-2"
+                title={g.name}
+              >
+                {g.name.split('/').pop()}
+              </span>
+            )}
           </div>
         ))}
       </div>

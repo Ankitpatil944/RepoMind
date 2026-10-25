@@ -60,3 +60,32 @@ def test_common_method_names_are_not_guessed(conn, tmp_path):
         conn.execute("DELETE FROM repos WHERE id = %s", (repo_id,))
         conn.commit()
         shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_same_name_in_two_services_resolves_to_the_callers_own(conn, tmp_path):
+    # A monorepo where each service defines its own get_db: a call must stay in its service,
+    # not all go to whichever definition happened to be indexed first.
+    repo = tmp_path / "mono"
+    for svc in ("alpha", "beta"):
+        (repo / "services" / svc / "core").mkdir(parents=True)
+        (repo / "services" / svc / "core" / "db.py").write_text("def get_db():\n    return 1\n")
+        (repo / "services" / svc / "routes.py").write_text(
+            f"def {svc}_route():\n    return get_db()\n"
+        )
+    repo_id = ingest_repo(conn, repo, HashingEmbedder())["repo_id"]
+    try:
+        rows = conn.execute(
+            """
+            SELECT c.qualified_name, tf.path FROM call_edges e
+            JOIN chunks c ON c.id = e.caller_chunk_id
+            JOIN chunks t ON t.id = e.callee_chunk_id JOIN files tf ON tf.id = t.file_id
+            WHERE e.repo_id = %s AND e.callee_name = 'get_db'
+            """,
+            (repo_id,),
+        ).fetchall()
+        assert dict(rows) == {
+            "alpha_route": "services/alpha/core/db.py",
+            "beta_route": "services/beta/core/db.py",
+        }
+    finally:
+        conn.execute("DELETE FROM repos WHERE id = %s", (repo_id,))

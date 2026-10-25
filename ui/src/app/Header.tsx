@@ -37,32 +37,36 @@ const BTN =
 export function Header({ repos, repo, ai, ask, onRepo, onPalette, onIndex, onExport }: Props) {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border-subtle bg-bg-1 px-3 sm:gap-3 sm:px-5">
+    <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle bg-bg-1 px-3 py-2 sm:h-14 sm:flex-nowrap sm:gap-3 sm:px-5 sm:py-0">
       <div className="flex items-center gap-2.5">
         <Mark />
         <span className="wordmark serif hidden text-[24px] leading-none sm:inline">RepoMind</span>
       </div>
 
       {repos.length > 0 && (
-        <label className="flex items-center gap-2">
+        <label className="flex min-w-0 items-center gap-2">
           <span className="sr-only">Repository</span>
           <select
             value={repo?.id ?? ''}
             onChange={(e) => onRepo(Number(e.target.value))}
-            className="h-[34px] max-w-[14rem] rounded-[7px] border border-border-control bg-raised px-2.5 font-mono text-[12.5px] text-text-1"
+            className="h-[34px] min-w-0 max-w-[11rem] rounded-[7px] sm:max-w-[14rem] border border-border-control bg-raised px-2.5 font-mono text-[12.5px] text-text-1"
           >
             {repos.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.name} · #{r.id}
+                {/* The id only disambiguates two indexed repos with the same name. */}
+                {repos.some((o) => o.id !== r.id && o.name === r.name) ? `${r.name} · #${r.id}` : r.name}
               </option>
             ))}
           </select>
         </label>
       )}
 
-      <div className="mx-auto flex min-w-[9rem] max-w-xl flex-1">{ask}</div>
+      {/* Phones: the ask box gets its own full-width row under the logo, picker and actions. */}
+      <div className="order-last flex min-w-0 basis-full sm:order-none sm:mx-auto sm:min-w-[9rem] sm:max-w-xl sm:flex-1 sm:basis-auto">
+        {ask}
+      </div>
 
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2 sm:ml-0">
         <button type="button" onClick={onPalette} className={BTN} aria-label="Open command palette" title="Command palette">
           <Search size={14} aria-hidden />
           <span className="hidden xl:inline">Search</span>
@@ -92,7 +96,7 @@ export function Header({ repos, repo, ai, ask, onRepo, onPalette, onIndex, onExp
             type="button"
             onClick={onExport}
             title="Export a token-budgeted summary to use as LLM context"
-            className={`${BTN} hidden lg:inline-flex`}
+            className={`${BTN} max-lg:hidden`}
           >
             <Download size={14} aria-hidden />
             Export
